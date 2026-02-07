@@ -1,19 +1,21 @@
-import { db } from "../db.js";
+import { db } from "../db/index.js";
 
 const createVenue = async (
   owner_id,
   name,
   description,
-  location,
-  created_at,
+  location
 ) => {
   const query = `
-     INSERT  INTO venues (owner_id,name,description,location,created_at)
+     INSERT  INTO venues (owner_id,name,description,location)
      VALUES ($1,$2,$3,$4)
-     RETURNING
+     RETURNING *
     `;
-  const values = [owner_id, name, description, location, created_at];
-  const { rows } = db.query(query,values);
+
+  const values = [owner_id, name, description, location];
+  const { rows } = await db.query(query,values);
+  console.log("create venue",rows);
+  
   return rows[0]
 };
 

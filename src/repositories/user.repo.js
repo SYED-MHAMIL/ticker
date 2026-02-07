@@ -18,7 +18,6 @@ const registerUser = async (body) => {
 const findUserbyEmailandID= async (email,username) => {
           const {rows} = await db.query(
                     `SELECT * FROM users WHERE email=$1 OR username=$2
-                     
                     `,  
                     [email,username]
                     )
@@ -29,17 +28,17 @@ const findUserbyEmailandID= async (email,username) => {
                     }
                     return rows[0]
 }
+
+
 const findUserbyID= async (id) => {
           const {rows} = await db.query(
                     `SELECT * FROM users WHERE id=$1 
                     `,  
                     [id]
                     )
-                    console.log("find row" , rows);
-                    
-                    if (!rows) {
-                             return null
-                    }
+                    // if (rows.length == 0) {
+                    //          return null
+                    // }
                     return rows[0]
 }
 const isPasswordCorrect = async (hash,password) => {
