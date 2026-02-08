@@ -1,15 +1,14 @@
 import { db } from "../db/index.js";
 
-const createSeats = async (venue_id,seat_number,seat_type) => {
+const createSeats = async (values,params) => {
 //     seat_number TEXT NOT NULL,
 //   seat_type 
      try {
          const {rows}  =await  db.query(
            `INSERT INTO seats (venue_id,seat_number,seat_type) 
-           VALUES ($1,$2,$3)
-           RETURNING *
+           VALUES ${values.join(", ")}
            `,
-            [venue_id,seat_number,seat_type]
+            [params]
          )
          
          return rows[0]
