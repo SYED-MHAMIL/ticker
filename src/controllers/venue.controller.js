@@ -7,7 +7,6 @@ const createVenue = AsyncHandler(async (req,res) => {
         return res.status(200).json(
             new  ApiResponse(202,venue,"Venue create Successfully")
         )
- 
 });
 
 

@@ -1,6 +1,6 @@
+import userRepo from "../repositories/user.repo.js";
 import venueRepo from "../repositories/venue.repo.js";
 import { ApiError } from "../utils/ApiError.js";
-import userRepo from "../repositories/user.repo.js";
 
 const  createVenue =async (req,res) => {
     const {name, description, location} =req.body;
@@ -9,7 +9,7 @@ const  createVenue =async (req,res) => {
     throw new ApiError(400, "Login User are required");
   }
       
-    const isAllMissing = [name, description, location].some(
+    const isAllMissing = [name, description,location].some(
     (field) => !field || field.trim() === ""
   );
 
