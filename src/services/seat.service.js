@@ -16,7 +16,7 @@ const  createSeats =async (req,res) => {
     
   for (const group of groups) {
       const { count, labelPrefix, type } = group;
-
+    
       const values = [];
       const params = [];
       let paramIndex = 1;
@@ -32,10 +32,10 @@ const  createSeats =async (req,res) => {
         paramIndex += 3;
       }
 
+      await seatRepo.createSeats(values,params)
     }
 
 
-    await seatRepo.createSeats(values,params)
         return { message: "Seats created successfully" };
 
 

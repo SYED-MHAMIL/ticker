@@ -1,4 +1,5 @@
 import { db } from "../db/index.js";
+import { ApiError } from "../utils/ApiError.js";
 
 const createSeats = async (values,params) => {
 //     seat_number TEXT NOT NULL,
@@ -8,7 +9,7 @@ const createSeats = async (values,params) => {
            `INSERT INTO seats (venue_id,seat_number,seat_type) 
            VALUES ${values.join(", ")}
            `,
-            [params]
+            params
          )
          
          return rows[0]
