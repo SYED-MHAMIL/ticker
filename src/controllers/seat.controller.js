@@ -10,4 +10,3 @@ const createSeats = AsyncHandler(async (req, res) => {
 });
 
 export default { createSeats };
-

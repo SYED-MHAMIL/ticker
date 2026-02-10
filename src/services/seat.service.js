@@ -41,5 +41,4 @@ const  createSeats =async (req,res) => {
 
 }
 
-
 export default {createSeats}
