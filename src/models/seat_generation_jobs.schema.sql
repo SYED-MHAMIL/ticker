@@ -13,7 +13,15 @@ CREATE TABLE seat_generation_jobs (
   started_at TIMESTAMP,
   completed_at TIMESTAMP,
 
-  CONSTRAINT fk_s
-);
+  CONSTRAINT fk_seat_generation_jobs_to_venue_id
+  FOREIGN KEY (venue_id)
+  REFERENCES venues(id)
+   
+  CONSTRAINT fk_seat_generation_jobs_to_user_id
+  FOREIGN KEY (requested_by)
+  REFERENCES users(id)
+
+
+  );  
 
 CREATE INDEX idx_seat_jobs_status ON seat_generation_jobs(status);
