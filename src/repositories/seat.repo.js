@@ -1,7 +1,4 @@
 import { db } from "../db/index.js";
-import { ApiError } from "../utils/ApiError.js";
-
-import db from "../db.js";
 
 const insertBatch = async (client, rows) => {
   const values = [];
