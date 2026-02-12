@@ -6,11 +6,11 @@ import { ApiError } from "../utils/ApiError.js";
 //  mark completed
 // marked filedcd
 // update progress
-const create = async (venue_id, requested_by, total_seats) => {
+const create = async (venue_id, requested_by, total_seats,groups) => {
   try {
     const query = `
-           INSERT INTO  seat_generation_jobs (venue_id,requested_by,status,total_seats)
-           VALUES ($1,$2,$3,$4)
+           INSERT INTO  seat_generation_jobs (venue_id,requested_by,status,total_seats,groups)
+           VALUES ($1,$2,$3,$4,$5)
            RETURNING *
            `;
 
@@ -19,10 +19,11 @@ const create = async (venue_id, requested_by, total_seats) => {
       requested_by,
       "pending",
       total_seats,
+      groups
     ]);
     return rows[0];
   } catch (error) {
-    throw new ApiError(406, "create seatjpb errro");
+    throw new ApiError(406, "create seatjpb errro",error);
   }
 };
 

@@ -1,4 +1,5 @@
 import { db } from "../db/index.js";
+import seat_jobRepo from "../repositories/seat_job.repo.js";
 import { ApiError } from "../utils/ApiError.js";
 import seatService from "./seat.service.js";
 const seat_generation_jobs = async (req,res) => {
@@ -6,7 +7,7 @@ const seat_generation_jobs = async (req,res) => {
       const {venueId} = req.params;
       const  {id} =  req.user;
        
-      if (!(venueId && !Array.isArray(groups) && groups.length > 0 )) {
+      if (!(venueId && Array.isArray(groups) && groups.length > 0 )) {
          throw new ApiError(406,"Invalid Inputs")
       }
 
@@ -16,6 +17,15 @@ const seat_generation_jobs = async (req,res) => {
      if (!(await seatService.countSeats(venueId))) {
          throw new ApiError(406,"Seats already exits for this venue")
      }
+
+     const jsongroups = JSON.stringify(groups)     
+       const data = await seat_jobRepo.create(
+        venueId,
+        id,
+        total_seats,
+        jsongroups
+     )
+     return data
 
 }
 
