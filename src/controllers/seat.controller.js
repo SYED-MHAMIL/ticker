@@ -2,6 +2,8 @@
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { AsyncHandler } from "../utils/asyncHandler.js";
 import * as seatService from "../services/seat_job.service.js";
+
+
 const createSeats = AsyncHandler(async (req, res) => {
     const data =   await seatService.requestSeatGeneration(req,res)
     return res.status(200).json(

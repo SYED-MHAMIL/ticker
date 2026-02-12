@@ -1,16 +1,19 @@
 import { db } from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 
-const create = async (venueId, requestedBy, totalSeats) => {
+const create = async ({venueId, requestedBy, totalSeats}) => {
+  console.log("from seat jpob serveices", venueId);
+  
   try {
-    const query = `INSERT INTO  seat_generation_jobs (venueId,requestedBy,status,totalSeats)
-        VALUES ($1,$2,'pending',$4)
+    const query = `INSERT INTO  seat_generation_jobs (venue_id,requested_by,status,total_seats)
+        VALUES ($1,$2,$3,$4)
         RETURNING *
         `;
-    const { rows } = db.query(query, [venueId, requestedBy, totalSeats]);
-    return rows[0];
+    const {rows} =await db.query(query, [venueId, requestedBy,'pending', totalSeats]);
+     return  rows[0]
+
   } catch (error) {
-    throw new ApiError(406, "job create error");
+    throw new ApiError(406, "job create error",error);
   }
 };
 
@@ -27,7 +30,9 @@ const fetchNextPending = async () => {
      )
      RETURNING *  
      `;
-  const { rows } = db.query(query);
+  const { rows } = await db.query(query);
+  console.log("fect job" ,  rows);
+  
   return  rows[0]
 };
 

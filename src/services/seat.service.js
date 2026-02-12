@@ -1,7 +1,7 @@
 import {db} from "../db/index.js";
 // import * as jobRepo from "../repositories/seat_job.repo.js";
 import seatRepo from "../repositories/seat.repo.js";
-import seat_jobRepo from "../repositories/seat_job.repo.js";
+import jobRepo from "../repositories/seat_job.repo.js";
 
 const BATCH_SIZE = 1000;
 
@@ -56,9 +56,14 @@ const generateSeatsForJob = async (job) => {
 
 const workerLoop = async () => {
   while (true) {
-    const job = await seat_jobRepo.fetchNextPending()
+
+    console.log("worker is going on ");
+    
+    const job = await jobRepo.fetchNextPending()
 
     if (!job) {
+      console.log("job does not");
+      
       await new Promise(r => setTimeout(r, 2000));
       continue;
     }

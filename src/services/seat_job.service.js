@@ -1,5 +1,5 @@
 import seatRepo from "../repositories/seat.repo.js";
-import * as jobRepo from "../repositories/seat_job.repo.js";
+import jobRepo from "../repositories/seat_job.repo.js";
 
 
 import { ApiError } from "../utils/ApiError.js";
@@ -7,6 +7,8 @@ import { ApiError } from "../utils/ApiError.js";
 export const requestSeatGeneration = async (req, res) => {
   const { venueId } = req.params;
   const { groups } = req.body;
+  console.log('groups',   groups);
+  
   const userId = req.user.id;
 
   if (!venueId || !Array.isArray(groups) || groups.length === 0) {
@@ -30,10 +32,12 @@ export const requestSeatGeneration = async (req, res) => {
     totalSeats
   });
 
-  return res.status(202).json({
+  return {
     jobId: job.id,
     status: job.status
-  });
+  };
+
+  
 };
 
 
