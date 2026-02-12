@@ -1,44 +1,22 @@
-import seatRepo from "../repositories/seat.repo.js";
-import jobRepo from "../repositories/seat_job.repo.js";
-
-
+import { db } from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import seatService from "./seat.service.js";
+const seat_generation_jobs = async (req,res) => {
+      const {groups} = req.body ;
+      const {venueId} = req.params;
+      const  {id} =  req.user;
+       
+      if (!(venueId && !Array.isArray(groups) && groups.length > 0 )) {
+         throw new ApiError(406,"Invalid Inputs")
+      }
 
-export const requestSeatGeneration = async (req, res) => {
-  const { venueId } = req.params;
-  const { groups } = req.body;
-  console.log('groups',   groups);
-  
-  const userId = req.user.id;
+      const total_seats = groups.reduce((p,c)=>c.count+p,0)
+      
+    // if seats already exits for this venue 
+     if (!(await seatService.countSeats(venueId))) {
+         throw new ApiError(406,"Seats already exits for this venue")
+     }
 
-  if (!venueId || !Array.isArray(groups) || groups.length === 0) {
-    throw new ApiError(400, "Invalid input");
-  }
+}
 
-  const totalSeats = groups.reduce((sum, g) => sum + g.count, 0);
-
-  if (totalSeats > 200000) {
-    throw new ApiError(400, "Seat limit exceeded");
-  }
-
-  const existingSeats = await seatRepo.countByVenue(venueId);
-  if (existingSeats > 0) {
-    throw new ApiError(409, "Seats already exist for this venue");
-  }
-
-  const job = await jobRepo.create({
-    venueId,
-    requestedBy: userId,
-    totalSeats
-  });
-
-  return {
-    jobId: job.id,
-    status: job.status
-  };
-
-  
-};
-
-
-export default {requestSeatGeneration}
+export default {seat_generation_jobs}

@@ -12,7 +12,7 @@ CREATE TABLE seat_generation_jobs (
   created_at TIMESTAMP DEFAULT now(),
   started_at TIMESTAMP,
   completed_at TIMESTAMP,
-
+  
   CONSTRAINT fk_seat_generation_jobs_to_venue_id
   FOREIGN KEY (venue_id)
   REFERENCES venues(id),
