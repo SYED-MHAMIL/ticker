@@ -28,37 +28,45 @@ const create = async (venue_id, requested_by, total_seats,groups) => {
 };
 
 const fetchNextPending = async () => {
-  const query = `
-          UPDATE seat_generation_jobs
-          SET status='processing', started_at = now() 
-          WHERE id=(
-               SELECT  id FROM  seat_generation_jobs 
-                    WHERE status = 'pending'
-                    ORDER BY created_at
-                    FROM  UPDATE SKIP LOCKED  
-                    LIMIT 1
-               )
-          RETURNING * 
-     `;
-
-      const  {rows} =  await db.query(query)
-      return rows[0]
-};
+  try {
+    const query = `
+            UPDATE seat_generation_jobs
+            SET status='processing', started_at = now() 
+            WHERE id=(
+                 SELECT  id FROM seat_generation_jobs 
+                      WHERE status = 'pending'
+                      ORDER BY created_at
+                      FOR  UPDATE SKIP LOCKED  
+                      LIMIT 1
+                 )
+            RETURNING * 
+       `;
+       
+       const  {rows} =  await db.query(query)
+       console.log(rows);
+        return rows[0]
+  
+  } catch (error) {
+     throw new ApiError(406, "fetch next pending job",error)
+  }};
 
 
 const markCompleted = async (jobID) => {
     try {
         const query = `
           UPDATE seat_generation_jobs
-          SET status='compeleted', completed_at = now() 
+          SET status='completed', completed_at = now() 
           WHERE id= $1             
           RETURNING * 
      `;
 
       const  {rows} =  await db.query(query,[jobID])
+      console.log(" mark completed row", rows);
+      console.log(" mark completed jobid", jobID);
+      
       return rows[0]
     } catch (error) {
-         throw new ApiError(404,"mark completed error")
+         throw new ApiError(404,"mark completed error",error)
     }
 };
 
@@ -68,7 +76,7 @@ const  markFailed = async (jobID) => {
         const query = `
           UPDATE seat_generation_jobs
           SET status='failed', started_at = now(), error_message = 'marked as failed'
-          WHERE id= $1             
+          WHERE id= $1            
           RETURNING * 
      `;
 
