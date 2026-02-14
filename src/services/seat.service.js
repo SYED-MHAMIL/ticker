@@ -1,9 +1,12 @@
+import { Pool } from "pg";
+import { db } from "../db/index.js";
 import seatRepo from "../repositories/seat.repo.js";
 import seat_jobRepo from "../repositories/seat_job.repo.js";
 import { ApiError } from "../utils/ApiError.js";
 
-const genetation_seats = async () => {
-  const jobs = await seat_jobRepo.fetchNextPending();
+const genetation_seats = async (client) => {
+  
+  const jobs = await seat_jobRepo.fetchNextPending(client);
   if (!jobs) {
     return jobs;
   }
@@ -21,13 +24,13 @@ const genetation_seats = async () => {
       for (let j = 0; j < groups[i].count; j++) {
         values.push(`($${idx++},$${idx++},$${idx++})`);
         //params : venue_id,seat_number,seat_type
-        params.push(
+          params.push(
           jobs.venue_id,
           groups[i].labelPrefix + (j + 1),
           groups[i].type,
         );
         if (BATCH_NO === values.length) {
-          await seatRepo.insert_batches(values, params);
+          await seatRepo.insert_batches(values, params,client);
           values = [];
           idx = 1;
           params = [];
@@ -37,7 +40,7 @@ const genetation_seats = async () => {
 
     //  remaining batches
     if (values.length > 0) {
-      await seatRepo.insert_batches(values, params);
+      await seatRepo.insert_batches(values, params,client);
       values = [];
       params = [];
     }
@@ -47,20 +50,28 @@ const genetation_seats = async () => {
   return jobs;
 };
 
-async function workerExecute(param) {
+async function workerExecute() {
     while (true) {
-  const job = await genetation_seats();
-  try {
+    const client =await db.connect()  
+      try {
+    await client.query('BEGIN')
+  const job = await genetation_seats(client);
     if (!job) {
       await new Promise((res) => setTimeout(res, 500));
-      continue;
+      continue
+      ;
     }
-    await seat_jobRepo.markCompleted(job.id);
+    await seat_jobRepo.markCompleted(job.id,client);
+    await client.query('COMMIT')
   } catch (error) {
+    await  client.query('ROLLBACK')
     if (job?.id) {
       await seat_jobRepo.markFailed(job.id);
     }
   }
+  finally {
+      client.release();
+    }
 }
 }
 

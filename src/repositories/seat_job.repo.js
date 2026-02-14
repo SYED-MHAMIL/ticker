@@ -27,7 +27,7 @@ const create = async (venue_id, requested_by, total_seats,groups) => {
   }
 };
 
-const fetchNextPending = async () => {
+const fetchNextPending = async (cleint_db) => {
   try {
     const query = `
             UPDATE seat_generation_jobs
@@ -42,7 +42,7 @@ const fetchNextPending = async () => {
             RETURNING * 
        `;
        
-       const  {rows} =  await db.query(query)
+       const  {rows} =  await cleint_db.query(query)
        console.log(rows);
         return rows[0]
   
@@ -51,7 +51,7 @@ const fetchNextPending = async () => {
   }};
 
 
-const markCompleted = async (jobID) => {
+const markCompleted = async (jobID,cleint_db) => {
     try {
         const query = `
           UPDATE seat_generation_jobs
@@ -60,7 +60,7 @@ const markCompleted = async (jobID) => {
           RETURNING * 
      `;
 
-      const  {rows} =  await db.query(query,[jobID])
+      const  {rows} =  await cleint_db.query(query,[jobID])
       console.log(" mark completed row", rows);
       console.log(" mark completed jobid", jobID);
       
@@ -92,7 +92,7 @@ const updateProgress = async (client,jobID,seat_created_now) => {
     try {
         const query = `
           UPDATE seat_generation_jobs
-          SET created_seats  = $1   
+          SET created_seats  = created_seats + $1   
           WHERE id= $2             
           RETURNING * 
      `;
@@ -100,7 +100,7 @@ const updateProgress = async (client,jobID,seat_created_now) => {
       const  {rows} =  await client.query(query,[seat_created_now,jobID])
       return rows[0]
     } catch (error) {
-         throw new ApiError(404,"mark completed error")
+         throw new ApiError(404,"update progress error")
     }
 };
 

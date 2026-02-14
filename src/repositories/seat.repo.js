@@ -1,7 +1,7 @@
 import { db } from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 
-const insert_batches = async (values,params)=> {    
+const insert_batches = async (values,params,client)=> {    
     console.log({values,params});
     
      try {
@@ -9,7 +9,7 @@ const insert_batches = async (values,params)=> {
           INSERT INTO seats (venue_id,seat_number,seat_type)
           VALUES ${values.join(',')}
         `
-        const {rows} = await db.query(query,params)
+        const {rows} = await client.query(query,params)
         console.log("insert batcehs row",rows);
         
         return rows[0]
