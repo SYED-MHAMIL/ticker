@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   expires_at TIMESTAMP DEFAULT NOW() ,
   created_at  TIMESTAMP DEFAULT NOW(),
    
-
+  
   CONSTRAINT fk_booking_to_event_seat_id
     FOREIGN KEY (event_seat_id)
     REFERENCES event_seats(id)
@@ -24,4 +24,14 @@ CREATE TABLE IF NOT EXISTS bookings (
     FOREIGN KEY (user_id)
     REFERENCES users(id)
     ON DELETE CASCADE
+
 );
+
+-- 1️⃣3️⃣ Prevent Double Booking (CRITICAL PART)
+ALTER TABLE bookings
+ADD CONSTRAINT unique_active_booking
+UNIQUE (event_seat_id)
+WHERE status IN ('pending','confirmed')
+-- index for user booking () 
+-- index for user reserved expired 
+-- index for seat quesries (check seats is alreaddy reserved)
