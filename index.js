@@ -2,10 +2,10 @@ import dotenv from  "dotenv"
 import { app } from "./src/app.js";
 import { ConnectDB } from "./src/db/index.js";
 
-
 dotenv.config({
     path: "./.env"
  })    
+
 
 // lisetn serveer and connect DB 
 

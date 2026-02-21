@@ -1,7 +1,6 @@
+import "dotenv/config";
 import pg from "pg"
 import { DB_NAME, HOST_NAME, USER } from "../constant.js";
-import dotenv from "dotenv"
-dotenv.config()
 
 const {Pool} = pg
 const credentials = {

@@ -1,5 +1,5 @@
 import express from "express";
-    import cors from "cors";
+import cors from "cors";
 import { router } from "./routes/index.route.js";
 import { ApiError } from "./utils/ApiError.js";
 import { ApiResponse } from "./utils/ApiResponse.js";
@@ -35,9 +35,5 @@ const errorHandler =(err,req,res,next )=>{
 }
 
 app.use(errorHandler)
-
-
-// TODO
-//  ALL THERE ROUTES AND MIDLDE HANDLE
 
 export { app };
