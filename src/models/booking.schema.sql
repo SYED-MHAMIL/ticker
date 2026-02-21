@@ -27,11 +27,20 @@ CREATE TABLE IF NOT EXISTS bookings (
 
 );
 
--- 1️⃣3️⃣ Prevent Double Booking (CRITICAL PART)
+-- Prevent Double Booking 
 ALTER TABLE bookings
 ADD CONSTRAINT unique_active_booking
 UNIQUE (event_seat_id)
 WHERE status IN ('pending','confirmed')
--- index for user booking () 
--- index for user reserved expired 
+
+-- index for user booking for how many tickets we have() 
+CREATE INDEX idx_user_booked ON  bookings(user_id,status) 
+
+-- index for user reserved expired
+CREATE INDEX  idx_user_reserved_expired ON bookings(expires_at)
+WHERE status = 'pending'
+
+
 -- index for seat quesries (check seats is alreaddy reserved)
+
+CREATE INDEX  idx_booking_event_seat ON bookings(event_seat_id,status)
