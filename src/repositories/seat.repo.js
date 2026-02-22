@@ -15,7 +15,7 @@ const insert_batches = async (values,params,client)=> {
         return rows[0]
    
      } catch (error) {
-        throw new ApiError(406,"insert batches error")
+        throw new ApiError(406,error)
      }
     }
 

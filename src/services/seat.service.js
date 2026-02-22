@@ -1,4 +1,3 @@
-import { Pool } from "pg";
 import { db } from "../db/index.js";
 import seatRepo from "../repositories/seat.repo.js";
 import seat_jobRepo from "../repositories/seat_job.repo.js";
@@ -19,8 +18,8 @@ const genetation_seats = async (client) => {
 
     //  [{'count': 2},{'count': 1200}]
 
+    let idx = 1;
     for (let i = 0; i < groups.length; i++) {
-      let idx = 1;
       for (let j = 0; j < groups[i].count; j++) {
         values.push(`($${idx++},$${idx++},$${idx++})`);
         //params : venue_id,seat_number,seat_type
@@ -53,9 +52,9 @@ const genetation_seats = async (client) => {
 async function workerExecute() {
     while (true) {
     const client =await db.connect()  
-      try {
     await client.query('BEGIN')
   const job = await genetation_seats(client);
+      try {
     if (!job) {
       await new Promise((res) => setTimeout(res, 500));
       continue

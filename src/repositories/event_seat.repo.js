@@ -1,4 +1,4 @@
-import { db } from "../db/index.js";
+
 import { ApiError } from "../utils/ApiError.js";
 
 const  createEventSeat =async (event_id,venue_id,client) => {
