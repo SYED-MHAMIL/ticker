@@ -8,7 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function runMigration() {
-    const files = ['seat.schema.sql','event.schema.sql','event_seat.schema.sql','booking.schema.sql','payment.schema.sql'];
+    const files = ['user.schema.sql','venue.schema.sql','seat.schema.sql','event.schema.sql','event_seat.schema.sql','booking.schema.sql','payment.schema.sql'];
     for (const file of files) {
         const sql = fs.readFileSync(
             path.join(__dirname, '../models', file),

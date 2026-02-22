@@ -1,24 +1,19 @@
-import { db } from "../db.js";
+import { db } from "../db/index.js";
 
-const createVenue = async (
-  owner_id,
-  name,
-  description,
-  location,
-  created_at,
-) => {
-  const query = `
-     INSERT  INTO venues (owner_id,name,description,location,created_at)
-     VALUES ($1,$2,$3,$4)
-     RETURNING
-    `;
-  const values = [owner_id, name, description, location, created_at];
-  const { rows } = db.query(query,values);
-  return rows[0]
-};
-
-
-
-
+const createVenue = async (owner_id,name,description,location) => {
+     try {
+         const {rows}  =await  db.query(
+           `INSERT INTO venues (owner_id,name,description,location) 
+           VALUES ($1,$2,$3,$4)
+           RETURNING *
+           `,
+            [owner_id,name,description,location]
+         )
+         
+         return rows[0]
+     } catch (error) {
+        throw new ApiError(406,error?.message)
+     }
+}
 
 export default {createVenue}

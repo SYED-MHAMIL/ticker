@@ -24,7 +24,6 @@ const  verifyUser = async (req,res,next) => {
      }
      
      req.user = user 
-     console.log({"user" : req.user});
      
      next()
 
