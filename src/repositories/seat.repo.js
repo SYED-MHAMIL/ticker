@@ -1,34 +1,39 @@
 import { db } from "../db/index.js";
+import { ApiError } from "../utils/ApiError.js";
 
-const insertBatch = async (client, rows) => {
-  const values = [];
-  const params = [];
-  let idx = 1;
+const insert_batches = async (values,params,client)=> {    
+    console.log({values,params});
+    
+     try {
+        const  query  =  `
+          INSERT INTO seats (venue_id,seat_number,seat_type)
+          VALUES ${values.join(',')}
+        `
+        const {rows} = await client.query(query,params)
+        console.log("insert batcehs row",rows);
+        
+        return rows[0]
+   
+     } catch (error) {
+        throw new ApiError(406,error)
+     }
+    }
 
-  for (const row of rows) {
-    values.push(`($${idx++}, $${idx++}, $${idx++})`);
-    params.push(row.venueId, row.seatNumber, row.type);
-  }
 
-  await client.query(
-    `
-    INSERT INTO seats (venue_id, seat_number, seat_type)
-    VALUES ${values.join(",")}
-    `,
-    params
-  );
-};
+const  countSeats =async (venue_id) => {
+        try {
+            const query = `
+                SELECT COUNT(*) FROM seat_generation_jobs WHERE id = $1
+            `
+            const {rows} =await  db.query(query,[venue_id])
+            if (rows.length == 0) {
+                return null
+            }
+            return rows[0]
+        } catch (error) {
+            throw new  ApiError(406,"GET COUNT ERRROR")
+        }
+}
 
-const countByVenue = async (venueId) => {
-  const { rows } = await db.query(
-    `SELECT COUNT(*) FROM seats WHERE venue_id = $1`,
-    [venueId]
-  );
-  return Number(rows[0].count);
-};
 
-export default {
-  insertBatch,
-  countByVenue
-};
-
+export default {countSeats,insert_batches}

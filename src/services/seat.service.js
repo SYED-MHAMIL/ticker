@@ -1,79 +1,79 @@
-import {db} from "../db/index.js";
-// import * as jobRepo from "../repositories/seat_job.repo.js";
+import { db } from "../db/index.js";
 import seatRepo from "../repositories/seat.repo.js";
-import jobRepo from "../repositories/seat_job.repo.js";
+import seat_jobRepo from "../repositories/seat_job.repo.js";
+import { ApiError } from "../utils/ApiError.js";
 
-const BATCH_SIZE = 1000;
-
-const generateSeatsForJob = async (job) => {
-  const client = await db.connect();
-  let created = 0;
+const genetation_seats = async (client) => {
+  
+  const jobs = await seat_jobRepo.fetchNextPending(client);
+  if (!jobs) {
+    return jobs;
+  }
 
   try {
-    await client.query("BEGIN");
+    let values = [];
+    let params = [];
+    const BATCH_NO = 1000;
+    const groups = jobs.groups;
 
-    // Example groups (you can store groups JSON in job if needed)
-    const groups = [
-      { count: job.total_seats, labelPrefix: "A", type: "regular" }
-    ];
+    //  [{'count': 2},{'count': 1200}]
 
-    let batch = [];
-
-    for (const group of groups) {
-      for (let i = 1; i <= group.count; i++) {
-        batch.push({
-          venueId: job.venue_id,
-          seatNumber: `${group.labelPrefix}${i}`,
-          type: group.type
-        });
-
-        if (batch.length === BATCH_SIZE) {
-          await seatRepo.insertBatch(client, batch);
-          created += batch.length;
-          batch = [];
-          await jobRepo.updateProgress(job.id, created);
+    let idx = 1;
+    for (let i = 0; i < groups.length; i++) {
+      for (let j = 0; j < groups[i].count; j++) {
+        values.push(`($${idx++},$${idx++},$${idx++})`);
+        //params : venue_id,seat_number,seat_type
+          params.push(
+          jobs.venue_id,
+          groups[i].labelPrefix + (j + 1),
+          groups[i].type,
+        );
+        if (BATCH_NO === values.length) {
+          await seatRepo.insert_batches(values, params,client);
+          values = [];
+          idx = 1;
+          params = [];
         }
       }
     }
 
-    if (batch.length > 0) {
-      await seatRepo.insertBatch(client, batch);
-      created += batch.length;
-      await jobRepo.updateProgress(job.id, created);
+    //  remaining batches
+    if (values.length > 0) {
+      await seatRepo.insert_batches(values, params,client);
+      values = [];
+      params = [];
     }
-
-    await client.query("COMMIT");
-    await jobRepo.markCompleted(job.id);
-
-  } catch (err) {
-    await client.query("ROLLBACK");
-    await jobRepo.markFailed(job.id, err.message);
-    throw err;
-  } finally {
-    client.release();
+  } catch (error) {
+    throw new ApiError(406, "Generation seats Error", error);
   }
+  return jobs;
 };
 
-const workerLoop = async () => {
-  while (true) {
-
-    console.log("worker is going on ");
-    
-    const job = await jobRepo.fetchNextPending()
-
+async function workerExecute() {
+    while (true) {
+    const client =await db.connect()  
+    await client.query('BEGIN')
+  const job = await genetation_seats(client);
+      try {
     if (!job) {
-      console.log("job does not");
-      
-      await new Promise(r => setTimeout(r, 2000));
-      continue;
+      await new Promise((res) => setTimeout(res, 500));
+      continue
+      ;
     }
-
-    try {
-      await generateSeatsForJob(job);
-    } catch (err) {
-      console.error("Job failed:", err);
+    await seat_jobRepo.markCompleted(job.id,client);
+    await client.query('COMMIT')
+  } catch (error) {
+    await  client.query('ROLLBACK')
+    if (job?.id) {
+      await seat_jobRepo.markFailed(job.id);
     }
   }
-};
+  finally {
+      client.release();
+    }
+}
+}
 
-workerLoop();
+await workerExecute()
+
+export default { genetation_seats };

@@ -7,6 +7,7 @@ CREATE TABLE seat_generation_jobs (
   requested_by UUID NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
   total_seats INT NOT NULL,
+  groups JSONB NOT NULL,
   created_seats INT NOT NULL DEFAULT 0,
   error_message TEXT,
   created_at TIMESTAMP DEFAULT now(),
