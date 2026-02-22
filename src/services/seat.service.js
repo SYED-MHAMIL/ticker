@@ -1,44 +1,79 @@
+import {db} from "../db/index.js";
+// import * as jobRepo from "../repositories/seat_job.repo.js";
 import seatRepo from "../repositories/seat.repo.js";
+import jobRepo from "../repositories/seat_job.repo.js";
 
-import { ApiError } from "../utils/ApiError.js";
+const BATCH_SIZE = 1000;
 
-const  createSeats =async (req,res) => {
-    const {groups} =req.body;
- 
-    const {venueId} = req.params
-    if (!venueId) {
-    throw new ApiError(400, "Venue are not setted");
-  }
-   
-   if (!venueId || !Array.isArray(groups)) {
-    throw new ApiError(400, "Invalid input");
-  }
-    
-  for (const group of groups) {
-      const { count, labelPrefix, type } = group;
-    
-      const values = [];
-      const params = [];
-      let paramIndex = 1;
+const generateSeatsForJob = async (job) => {
+  const client = await db.connect();
+  let created = 0;
 
-      for (let i = 1; i <= count; i++) {
-        const seatNumber = `${labelPrefix}${i}`;
+  try {
+    await client.query("BEGIN");
 
-        values.push(
-          `($${paramIndex}, $${paramIndex + 1}, $${paramIndex + 2})`
-        );
+    // Example groups (you can store groups JSON in job if needed)
+    const groups = [
+      { count: job.total_seats, labelPrefix: "A", type: "regular" }
+    ];
 
-        params.push(venueId, seatNumber, type);
-        paramIndex += 3;
+    let batch = [];
+
+    for (const group of groups) {
+      for (let i = 1; i <= group.count; i++) {
+        batch.push({
+          venueId: job.venue_id,
+          seatNumber: `${group.labelPrefix}${i}`,
+          type: group.type
+        });
+
+        if (batch.length === BATCH_SIZE) {
+          await seatRepo.insertBatch(client, batch);
+          created += batch.length;
+          batch = [];
+          await jobRepo.updateProgress(job.id, created);
+        }
       }
-
-      await seatRepo.createSeats(values,params)
     }
 
+    if (batch.length > 0) {
+      await seatRepo.insertBatch(client, batch);
+      created += batch.length;
+      await jobRepo.updateProgress(job.id, created);
+    }
 
-        return { message: "Seats created successfully" };
+    await client.query("COMMIT");
+    await jobRepo.markCompleted(job.id);
 
+  } catch (err) {
+    await client.query("ROLLBACK");
+    await jobRepo.markFailed(job.id, err.message);
+    throw err;
+  } finally {
+    client.release();
+  }
+};
 
-}
+const workerLoop = async () => {
+  while (true) {
 
-export default {createSeats}
+    console.log("worker is going on ");
+    
+    const job = await jobRepo.fetchNextPending()
+
+    if (!job) {
+      console.log("job does not");
+      
+      await new Promise(r => setTimeout(r, 2000));
+      continue;
+    }
+
+    try {
+      await generateSeatsForJob(job);
+    } catch (err) {
+      console.error("Job failed:", err);
+    }
+  }
+};
+
+workerLoop();

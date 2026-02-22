@@ -15,8 +15,8 @@ CREATE TABLE seat_generation_jobs (
 
   CONSTRAINT fk_seat_generation_jobs_to_venue_id
   FOREIGN KEY (venue_id)
-  REFERENCES venues(id)
-   
+  REFERENCES venues(id),
+  
   CONSTRAINT fk_seat_generation_jobs_to_user_id
   FOREIGN KEY (requested_by)
   REFERENCES users(id)

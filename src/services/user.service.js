@@ -49,13 +49,8 @@ const registerUser =async (req,res) => {
       if (!user) {
     throw new ApiError(400, "User is not saved in DB");
   }
-  console.log(user);
 
-  const user_plain = user.toObject();
-  delete user_plain.password;
-
-  console.log(user_plain);
-  return user_plain;
+  return user;
 }
 
 const generateAccessAndRefreshToken =  async (id) => {
