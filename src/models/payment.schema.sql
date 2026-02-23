@@ -4,7 +4,6 @@ CREATE TYPE  payment_status AS ENUM (
     'success', 'failed', 'refunded'
 );
 
-
 CREATE TYPE  currency_type AS ENUM (
     '$','INR','PKR'
 );
@@ -28,6 +27,4 @@ CREATE TABLE IF NOT EXISTS payments (
     FOREIGN KEY (booking_id)
     REFERENCES bookings(id)
     ON DELETE CASCADE
-);
-
-
+);          
