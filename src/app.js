@@ -4,8 +4,21 @@ import { router } from "./routes/index.route.js";
 import { ApiError } from "./utils/ApiError.js";
 import { ApiResponse } from "./utils/ApiResponse.js";
 import cookieParser from "cookie-parser";
+import cron from "node-cron";
+import bookingRepo from "./repositories/booking.repo.js";
 
 const app = express();
+cron.schedule('* * * * *',async () => {
+   try {
+     await bookingRepo.update_booking_status()
+     console.log("hello mohamil");
+     
+    } catch (error) {
+     throw new ApiError(500,"Shedule Error")
+   }
+})
+
+
 app.use(
   cors({
     origin: "localhost:3000",

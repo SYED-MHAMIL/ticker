@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon ./index.js",
-    "worker":"node ./src/services/seat.service.js" 
+    "worker": "node ./src/services/seat.service.js"
   },
   "keywords": [],
   "author": "",
@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.5",
     "multer": "^2.0.2",
+    "node-cron": "^4.2.1",
     "pg": "^8.17.2"
   },
   "devDependencies": {
