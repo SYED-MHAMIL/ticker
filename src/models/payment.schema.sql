@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS payments (
   booking_id UUID NOT NULL,
   amount  INTEGER  NOT NULL,
   currency currency_type DEFAULT '$',  
-  payment_status bookings_status DEFAULT 'pending',
+  status payment_status DEFAULT 'pending',
   privider provider_status  DEFAULT 'stripe' ,
   created_at  TIMESTAMP DEFAULT NOW(),
    
