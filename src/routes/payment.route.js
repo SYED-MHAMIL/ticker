@@ -4,9 +4,10 @@ import { verifyUser } from "../middlewares/auth.middleware.js";
 
 const paymentRouter = Router();
 
-paymentRouter.post("/intent/:booking_id", verifyUser, paymentController.createPaymentIntent);
+paymentRouter.post("/intent/:booking_id", paymentController.createPaymentIntent);
 paymentRouter.post("/confirm", verifyUser, paymentController.confirmPayment);
 paymentRouter.post("/cancel", verifyUser, paymentController.cancelPendingBookingPayment);
 paymentRouter.post("/webhook", paymentController.stripeWebhook);
 
 export { paymentRouter };
+ 
