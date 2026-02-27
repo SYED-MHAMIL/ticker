@@ -9,8 +9,9 @@ const withTransaction=async (handler) => {
   try {
     const client = await db.connect();
     await client.query('BEGIN')
-    await  handler(client)
+    const  result =  await  handler(client)
     await client.query('COMMIT')
+    return result
   } catch (error) {
       await client.query('ROLLBACK')
       throw new ApiError(406,error)
@@ -19,7 +20,6 @@ const withTransaction=async (handler) => {
   }
  
 }
-
 
 
 const stripe= new Stripe(process.env.STRIPE_KEY)
