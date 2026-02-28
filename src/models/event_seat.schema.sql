@@ -24,3 +24,4 @@ CREATE TABLE IF NOT EXISTS event_seats (
 );
 
 
+CREATE INDEX idx_event_seat_status  on  event_seats(seat_status)

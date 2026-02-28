@@ -1,4 +1,4 @@
-import { db } from "../db/index.js";
+﻿import { db } from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 
 const reserved_seat_booking = async (event_seat_id,
@@ -44,7 +44,9 @@ const getBookingforUpdate=  async (booking_id) => {
 
     const  query= `
            SELECT (event_seat_id,status AS booking_status,event_id,seat_id,seat_status) from bookings
-           JOIN event_seats ON bookings.event_seat_id = event_seats.id                                   
+           JOIN event_seats ON bookings.event_seat_id = event_seats.id
+           WHERE id=$1
+           FOR UPDATE OF bookings, event_seats                             
          `
     const params = [booking_id]
     const {rows} = await db.query(query,params)
@@ -56,4 +58,4 @@ const getBookingforUpdate=  async (booking_id) => {
 }
 
 
-export default {reserved_seat_booking,get_booked_seat}
+export default {reserved_seat_booking,get_booked_seat,getBookingforUpdate}

@@ -15,4 +15,20 @@ const  createEventSeat =async (event_id,venue_id,client) => {
   }
 }
 
-export default {createEventSeat}     
+
+
+const  updateEventSeat_Status =async (event_seat_id,client) => {
+  try {
+         const query = `
+            UPDATE event_seats
+            SET  seat_status = "reserved" 
+         `
+         const  {rows} = await client.query(query,[event_seat_id])
+         return rows[0]
+  } catch (error) {
+     throw  new ApiError(406,error)
+  }
+}
+
+
+export default {createEventSeat,updateEventSeat_Status}     

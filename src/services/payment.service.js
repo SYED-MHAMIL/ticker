@@ -2,6 +2,7 @@
 import Stripe from "stripe";
 import { db } from "../db/index.js";
 import bookingRepo from "../repositories/booking.repo.js";
+import event_seatRepo from "../repositories/event_seat.repo.js";
 
 
 
@@ -29,6 +30,8 @@ const createPaymentIntent = async (req,res) => {
   const {booking_id} = req.params;
   const user_id =  req.user.id
 
+  const  get_booking_seat=await bookingRepo.getBookingforUpdate(booking_id) 
+
   const paymentIntent = await stripe.paymentIntents.create({
   amount:amount,
   currency: currency,
@@ -37,14 +40,17 @@ const createPaymentIntent = async (req,res) => {
   },
   metadata: {
     booking_id: booking_id,
-    user_id :user_id
+    user_id :user_id,
+    event_seat : get_booking_seat
   },
 });
-
-const data = withTransaction(async (client) => {
-       const get_booked_seat = bookingRepo.get_booked_seat(booking_id)
-
-})
+    const  create_payment_intent= await paymentIntent()
+    withTransaction(async (client) => {
+        if(get_booking_seat.seat_status  != 'reserved'){
+            await event_seatRepo.updateEventSeat_Status(get_booking_seat.event_seat_id,client)
+        }
+       
+    })
    
 return paymentIntent
  
