@@ -20,12 +20,30 @@ const withTransaction = async (handler) => {
   }
 };
 
+const  isBookingExpired = async () => {
+  
+}
 const stripe = new Stripe(process.env.STRIPE_KEY);
+
+
+
 
 const createPaymentIntent = async (req, res) => {
   const { amount, currency } = req.body;
   const { booking_id } = req.params;
   const user_id = req.user.id;
+
+   if([amount,currency].some(c=> !c ||  c.trim() === "")){
+       throw new ApiError(406,"All field are required")
+   }
+    
+   if(!user_id){
+       throw new ApiError(406,"Authorized user  is required")
+   }
+
+   if(!booking_id){
+       throw new ApiError(406,"booking_id user is required")
+   }
 
   const get_booking_seat = await bookingRepo.getBookingforUpdate(booking_id);
 
@@ -41,28 +59,35 @@ const createPaymentIntent = async (req, res) => {
       event_seat: get_booking_seat,
     },
   });
-  const create_payment_intent = await paymentIntent();
-  withTransaction(async (client) => {
+  const payment = await paymentIntent();
+  
+   if(!payment){
+       throw new ApiError(406,"payment is required")
+   }
+
+   return withTransaction(async (client) => {
+    
     if (get_booking_seat.seat_status !== "reserved") {
       await event_seatRepo.updateEventSeat_Status(
         get_booking_seat.event_seat_id,
         client,
       );
 
-      await paymentRepo.setup_payment(
-        create_payment_intent.metadata?.booking_id,
-        create_payment_intent.amount,
-        create_payment_intent.currency,
-        "pending",
-        "stripe",
-        client,
-      );
     }
-  });
-
-  return {
-    payment_intend_id: create_payment_intent.id,
-    client_secret: create_payment_intent.create_payment_intent,
-    status: create_payment_intent.status,
-  };
+    await paymentRepo.setup_payment(
+      payment.metadata?.booking_id,
+      payment.amount,
+      payment.currency,
+      "pending",
+      "stripe",
+      client,
+    );
+    
+      return {
+        payment_intend_id: payment.id,
+        payment,
+        client_secret: payment.create_payment_intent,
+        status: payment.status,
+      };
+});
 };

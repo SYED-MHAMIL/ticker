@@ -6,7 +6,7 @@ CREATE TYPE  payment_status AS ENUM (
 
 
 CREATE TYPE  currency_type AS ENUM (
-    '$','INR','PKR'
+    'USD','INR','PKR'
 );
 
 CREATE TYPE  provider_status AS ENUM (
@@ -18,9 +18,9 @@ CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   booking_id UUID NOT NULL,
   amount  INTEGER  NOT NULL,
-  currency currency_type DEFAULT '$',  
+  currency currency_type DEFAULT 'USD',  
   payment_status bookings_status DEFAULT 'pending',
-  privider provider_status  DEFAULT 'stripe' ,
+  privider provider_status  DEFAULT 'stripe',
   created_at  TIMESTAMP DEFAULT NOW(),
    
 
