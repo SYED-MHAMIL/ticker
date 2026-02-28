@@ -21,7 +21,8 @@ const  updateEventSeat_Status =async (event_seat_id,client) => {
   try {
          const query = `
             UPDATE event_seats
-            SET  seat_status = "reserved" 
+            SET  seat_status = "reserved"
+            WHERE id=$1 
          `
          const  {rows} = await client.query(query,[event_seat_id])
          return rows[0]

@@ -46,12 +46,17 @@ const createPaymentIntent = async (req,res) => {
 });
     const  create_payment_intent= await paymentIntent()
     withTransaction(async (client) => {
-        if(get_booking_seat.seat_status  != 'reserved'){
+        if(get_booking_seat.seat_status !== 'reserved'){
             await event_seatRepo.updateEventSeat_Status(get_booking_seat.event_seat_id,client)
-        }
+        
+          }
+
+        
        
     })
    
-return paymentIntent
+return {
+  
+}
  
 }
