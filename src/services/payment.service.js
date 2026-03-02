@@ -46,6 +46,49 @@ const bookingMarkAsExpired = async (booking, client) => {
   }
 };
 
+const fainalizePaymentIntent =async (booking, client) => {
+// 
+}; 
+
+const seatbookingConfirm = async (booking_id,event_seat_id) => {
+   const seat_query = `
+      UPDATE event_seats
+      SET seat_status='booked'
+      WHERE id=$1
+   `      
+   const booking_query = `
+      UPDATE bookings
+      SET status='confirmed'
+      WHERE id=$1
+   `
+   return withTransaction(async (client) => {
+     await client.query(seat_query,[event_seat_id])  
+     await client.query(booking_query,[booking_id])
+  }
+
+  )
+
+}
+
+const paymentBookingFailed = async (booking_id,event_seat_id) => {
+   const seat_query = `
+      UPDATE event_seats
+      SET seat_status='reserved'
+      WHERE id=$1
+   `      
+   const booking_query = `
+      UPDATE bookings
+      SET status=''
+      WHERE id=$1
+   `
+   return withTransaction(async (client) => {
+     await client.query(seat_query,[event_seat_id])  
+     await client.query(booking_query,[booking_id])
+  }
+
+  )
+
+}
 const stripe = new Stripe(process.env.STRIPE_KEY);
 
 const createPaymentIntent = async (req, res) => {
@@ -145,10 +188,10 @@ const webhookHandler = async (req,res) => {
       const paymentIntent = event.data.object;
       // Then define and call a method to handle the successful payment intent.
       console.log("payment successfull",paymentIntent)
-
+        await seatbookingConfirm(paymentIntent.metadata.booking_id,paymentIntent.metadata.event_seat_id)
       // handlePaymentIntentSucceeded(paymentIntent);
       break;
-    case 'payment_method.attached':
+    case 'payment_intent.payment_failed':
       const paymentMethod = event.data.object;
       // Then define and call a method to handle the successful attachment of a PaymentMethod.
       // handlePaymentMethodAttached(paymentMethod);
