@@ -14,7 +14,7 @@ const  setup_payment= async (booking_id,amount,currency,payment_status,privider,
     RETURNING *
     `;
     const params = [booking_id,amount,currency,payment_status];
-    const  {rows} = await client.query(query, params);
+    const {rows} = await client.query(query, params);
     
    return rows[0]
 

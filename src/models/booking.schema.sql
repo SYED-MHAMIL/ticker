@@ -2,6 +2,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TYPE bookings_status AS ENUM('pending','confirmed','expired','cancelled');
 
 
+
 CREATE TABLE bookings(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     event_seat_id UUID NOT NULL,

@@ -43,11 +43,23 @@ const getBookingforUpdate=  async (booking_id) => {
     // ,seat_status
 
     const  query= `
-           SELECT (event_seat_id,status AS booking_status,event_id,seat_id,seat_status) from bookings
-           JOIN event_seats ON bookings.event_seat_id = event_seats.id
-           WHERE id=$1
+           SELECT
+           b.id, 
+           b.event_seat_id,
+           b.status AS booking_status,
+           es.event_id,
+           es.seat_id,
+           es.seat_status,
+           b.expires_at
+           FROM bookings b
+           JOIN event_seats es
+              ON b.event_seat_id = es.id
+           WHERE b.id=$1
            FOR UPDATE OF bookings, event_seats                             
          `
+// for update means you looked this row in transaction
+
+
     const params = [booking_id]
     const {rows} = await db.query(query,params)
    return rows[0] 
