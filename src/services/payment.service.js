@@ -46,49 +46,113 @@ const bookingMarkAsExpired = async (booking, client) => {
   }
 };
 
-const fainalizePaymentIntent =async (booking, client) => {
-// 
-}; 
 
-const seatbookingConfirm = async (booking_id,event_seat_id) => {
-   const seat_query = `
+
+
+// if payment succes,faieled, canceled by user
+
+const updateBookingOnPaymentStatus =async (client,isSuccess,payment,booking) => {
+    const booking_id=  booking.booking_id;
+    const event_seat_id=  booking.event_seat_id;
+    const  payment_intent_id =  payment.id
+     
+  if (isBookingExpired(booking) && booking.status === "pending") {
+        await bookingMarkAsExpired(client, booking);
+      // you can  two thing if status is true (means the payment has recived to stripe) means you to refund the amount that has proceed 
+  }
+
+
+    if (isSuccess) {
+       const seat_query = `
       UPDATE event_seats
       SET seat_status='booked'
-      WHERE id=$1
+      WHERE id=$1 AND seat_status='reserved'
    `      
    const booking_query = `
       UPDATE bookings
       SET status='confirmed'
       WHERE id=$1
    `
-   return withTransaction(async (client) => {
+    const payment_query = `
+      UPDATE payments
+      SET status='success'
+      WHERE payment_intent_id=$1
+   `
+   
      await client.query(seat_query,[event_seat_id])  
      await client.query(booking_query,[booking_id])
-  }
-
-  )
-
-}
-
-const paymentBookingFailed = async (booking_id,event_seat_id) => {
-   const seat_query = `
+     await client.query(payment_query,[payment_intent_id])
+         
+          return {
+            booking_id: booking.id,
+            payment_status : "Success" , 
+            booking_status: "confirmed",
+            seat_status: "booked",
+            payment,
+          };
+    }else{
+      // if payment failed seat are avilable
+      const seat_query = `
       UPDATE event_seats
-      SET seat_status='reserved'
+      SET seat_status='available'
       WHERE id=$1
    `      
    const booking_query = `
       UPDATE bookings
-      SET status=''
+      SET status='cancelled'
       WHERE id=$1
    `
-   return withTransaction(async (client) => {
+    const payment_query = `
+      UPDATE payments
+      SET status='failed'
+      WHERE payment_intend_id=$1
+   `
+   
      await client.query(seat_query,[event_seat_id])  
      await client.query(booking_query,[booking_id])
+     await client.query(payment_query,[payment_intent_id])
+         
+      return {
+      booking_id: booking.id,
+      booking_status: "expired",
+      seat_status: "booked",
+      payment,
+    };
+
+
+    }   
+};  
+
+
+const fainalizePaymentIntent =async (payment,eventType,userId=null) => {
+  const bookingId = paymentIntent?.metadata?.booking_id;
+  if (!bookingId) {
+    return { ignored: true, reason: "payment_intent_without_booking_metadata" };
   }
 
-  )
+  const isSuccess = eventType === "payment_intent.succeeded";
+  return withTransaction(async (client) => {
+    const booking = await bookingRepo.getBookingforUpdate(client, bookingId, userId);
 
-}
+    if (!booking) {
+      if (userId) {
+        throw new ApiError(404, "Booking not found for user");
+      }
+      return { ignored: true, reason: "booking_not_found" };
+    }
+// client,isSuccess,payment,booking
+    return updateBookingOnPaymentStatus({
+      client,
+      isSuccess,
+      payment,
+      booking
+    });
+  });
+
+
+}; 
+
+
 const stripe = new Stripe(process.env.STRIPE_KEY);
 
 const createPaymentIntent = async (req, res) => {
@@ -146,6 +210,7 @@ const createPaymentIntent = async (req, res) => {
       }
 
       const payInDB = await paymentRepo.setup_payment(
+        payment.id, 
         payment.metadata?.booking_id,
         payment.amount,
         payment.currency,
@@ -166,44 +231,90 @@ const createPaymentIntent = async (req, res) => {
   };
 };
 
-const webhookHandler = async (req,res) => {
-  const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    let event;
-  if (endpointSecret) {
-    // Get the signature sent by Stripe
-    const signature = request.headers['stripe-signature'];
-    try {
-      event = stripe.webhooks.constructEvent(
-        request.body,
-        signature,
-        endpointSecret
-      );
-    } catch (err) {
-      throw new ApiError(404,err.message)
-    }
+const confirmPaymentIntent = async (req, res) => {
 
-  // Handle the event
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object;
-      // Then define and call a method to handle the successful payment intent.
-      console.log("payment successfull",paymentIntent)
-        await seatbookingConfirm(paymentIntent.metadata.booking_id,paymentIntent.metadata.event_seat_id)
-      // handlePaymentIntentSucceeded(paymentIntent);
-      break;
-    case 'payment_intent.payment_failed':
-      const paymentMethod = event.data.object;
-      // Then define and call a method to handle the successful attachment of a PaymentMethod.
-      // handlePaymentMethodAttached(paymentMethod);
-      break;
-    // ... handle other event types
-    default:
-      console.log(`Unhandled event type ${event.type}`);
+  const  {payment_intend_id}  = req.params;
+  const userId = req.user.id;
+
+ 
+  if (!payment_intend_id) {
+    throw new ApiError(400, "payment_intent_id is required");
   }
 
-  // Return a response to acknowledge receipt of the event
-  response.json({received: true});
-}
-}
+  if (!userId) {
+    throw new ApiError(401,"Authorized user is required");
+  }
+  const payment = await stripe.paymentIntents.retrieve(payment_intend_id);
+  const booking_id = payment.metadata.booking_id
+  
+  if (!booking_id) {
+    throw new ApiError(406, "booking_id user is required");
+  }
 
-export default { createPaymentIntent,webhookHandler };
+  await withTransaction(async (client) => {
+    const booking = await bookingRepo.getBookingforUpdate(booking_id);
+    if (isBookingExpired(booking)) {
+      await bookingMarkAsExpired(booking, client);
+      throw new ApiError(406, "Booking has been expired");
+    }
+
+    if (booking.seat_status == "booked") {
+      throw new ApiError(406, "Seat has been sold");
+    }
+    if (booking.seat_status !== "reserved") {
+      throw new ApiError(406, "Seat is not available for payment");
+    }
+  });
+
+  return {
+    payment_intend_id: payment.id,
+    payment,
+    client_secret: payment.client_secret,
+    status: payment.status,
+  };
+};
+
+
+
+  const webhookHandler = async (req,res) => {
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const userId = req.user.id
+      let event;
+    if (endpointSecret) {
+      // Get the signature sent by Stripe
+      const signature = request.headers['stripe-signature'];
+      try {
+        event = stripe.webhooks.constructEvent(
+          request.body,
+          signature,
+          endpointSecret
+        );
+
+      } catch (err) {
+        throw new ApiError(404,err.message)
+      }
+
+    // Handle the event
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        const paymentIntent = event.data.object;
+        // Then define and call a method to handle the successful payment intent.
+        console.log("payment successfull",paymentIntent)
+        fainalizePaymentIntent(payment,event.type,userId);
+        break;
+      case 'payment_intent.payment_failed':
+        const payment= event.data.object;
+        // Then define and call a method to handle the successful attachment of a PaymentMethod.
+        fainalizePaymentIntent(payment,event.type,userId);
+        break;
+      // ... handle other event types
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    // Return a response to acknowledge receipt of the event
+    response.json({received: true});
+  }
+  }
+
+export default { createPaymentIntent,webhookHandler,confirmPaymentIntent };

@@ -1,19 +1,19 @@
 import { ApiError } from "../utils/ApiError";
 
 
-const  setup_payment= async (booking_id,amount,currency,payment_status,privider,client) => {
+const  setup_payment= async (payment_intent_id,booking_id,amount,currency,payment_status,privider,client) => {
 
   try {
-//       booking_id UUID NOT NULL,
+//   booking_id UUID NOT NULL,
 //   amount  INTEGER  NOT NULL,
 //   currency currency_type DEFAULT '$',  
 //   payment_status bookings_status DEFAULT 'pending',
 //   privider provider_status  DEFAULT 'stripe' ,
 //   created_at  TIMESTAMP DEFAULT NOW(),
-    const query = `INSERT into payments (booking_id,amount,currency,payment_status,privider) VALUES ($1,$2,$3,$4,$5)
+    const query = `INSERT into payments (payment_intent_id,booking_id,amount,currency,payment_status,privider) VALUES ($1,$2,$3,$4,$5,$6)
     RETURNING *
     `;
-    const params = [booking_id,amount,currency,payment_status];
+    const params = [payment_intent_id,booking_id,amount,currency,payment_status];
     const {rows} = await client.query(query, params);
     
    return rows[0]

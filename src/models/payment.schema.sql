@@ -16,6 +16,7 @@ CREATE TYPE  provider_status AS ENUM (
 
 CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  payment_intent_id  VARCHAR(50) NOT NULL UNIQUE,
   booking_id UUID NOT NULL,
   amount  INTEGER  NOT NULL,
   currency currency_type DEFAULT 'USD',  
