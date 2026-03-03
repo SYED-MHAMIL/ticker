@@ -313,12 +313,16 @@ if (pi.status === "succeeded") {
    throw new ApiError(400, "Cannot cancel succeeded payment");
 } 
 
+const cancel_paymentIntent  =  await stripe.paymentIntents.cancel(payment_intent_id);
+
   return  withTransaction(async (client) => {
-  
-    const cancel_paymentIntent  =  await stripe.paymentIntents.cancel(payment_intent_id);
-    const booking_id = cancel_paymentIntent.metadata.booking_id
-    const booking =await bookingRepo.getBookingforUpdate(booking_id)
-    const event_seat_id = cancel_paymentIntent.metadata.event_seat_id
+    const booking_id = pi.metadata.booking_id
+    
+    const booking =await bookingRepo.getBookingforUpdate(booking_id)  
+    if(booking){
+      throw new ApiError(406,"booking does not exits")
+    }
+    const event_seat_id = pi.metadata.event_seat_id
     const seat_query = `
       UPDATE event_seats
       SET seat_status='available'
@@ -336,10 +340,7 @@ if (pi.status === "succeeded") {
    `
    
      await client.query(seat_query,[event_seat_id])  
-     
       await client.query(booking_query,[booking_id])
-     
-     
      await client.query(payment_query,[payment_intent_id])
     
     
