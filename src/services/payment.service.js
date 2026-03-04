@@ -4,22 +4,7 @@ import { db } from "../db/index.js";
 import bookingRepo from "../repositories/booking.repo.js";
 import event_seatRepo from "../repositories/event_seat.repo.js";
 import paymentRepo from "../repositories/payment.repo.js";
-
-const withTransaction = async (handler) => {
-  let client;
-  try {
-    client = await db.connect();
-    await client.query("BEGIN");
-    const result = await handler(client);
-    await client.query("COMMIT");
-    return result;
-  } catch (error) {
-    await client.query("ROLLBACK");
-    throw new ApiError(406, error);
-  } finally {
-    client.release();
-  }
-};
+import { withTransaction } from "../utils/transaction.js";
 
 const isBookingExpired = (booking) => {
   return new Date(booking.expires_at) < new Date();
@@ -100,7 +85,7 @@ const updateBookingOnPaymentStatus =async (client,isSuccess,payment,booking) => 
 
     const payment_query = `
     UPDATE payments
-    SET status='success'
+    SET status='success' AND created_at = NOW()
     WHERE payment_intent_id=$1
     `
     await client.query(payment_query,[payment_intent_id])
@@ -296,7 +281,7 @@ const confirmPaymentIntent = async (req, res) => {
   };
 };
 
-const cancelPaymentIntent= async (req, res) => {
+const cancelPendingBookingPayment= async (req, res) => {
 
   const  {payment_intent_id}  = req.params;
    const userId = req.user.id;
@@ -398,4 +383,4 @@ const cancel_paymentIntent  =  await stripe.paymentIntents.cancel(payment_intent
   }
   }
 
-export default { createPaymentIntent,webhookHandler,confirmPaymentIntent,cancelPaymentIntent };
+export default { createPaymentIntent,webhookHandler,confirmPaymentIntent,cancelPendingBookingPayment };

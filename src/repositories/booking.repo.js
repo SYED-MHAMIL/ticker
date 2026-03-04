@@ -1,16 +1,39 @@
 ﻿import { db } from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
+import { withTransaction } from "../utils/transaction.js";
 
 const reserved_seat_booking = async (event_seat_id,
     user_id) => {
-     const  query= `
+   return  withTransaction(async (client) => {
+    const  event_seat_query = `
+     SELECT * FROM event_seats
+     WHERE id=$1
+     FOR UPDATE
+     `
+     const es = await client.query(event_seat_query,[event_seat_id])
+     if(es?.rows[0].seat_status === "reserved"){
+         throw new ApiError(406,"this seat has been reverved by someone")
+     }
+     
+  //  for reserved the seat
+      const  es_query = `
+     UPDATE event_seats
+     SET seat_status = 'reserved'
+     WHERE id=$1
+     `
+      await client.query(es_query,[event_seat_id])
+
+
+     const  query= `            
            INSERT into bookings(event_seat_id,user_id)
-           VALUES($1,$2)                            
+           VALUES($1,$2)
+           RETURNING *                                               
          `
     const params = [event_seat_id,user_id]
-    const {rows} = await db.query(query,params)
+    const {rows} = await client.query(query,params)
    return rows[0] 
-
+    
+     })
 }
 
 const get_booked_seat =  async (booking_id) => {
