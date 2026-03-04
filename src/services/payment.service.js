@@ -6,11 +6,11 @@ import event_seatRepo from "../repositories/event_seat.repo.js";
 import paymentRepo from "../repositories/payment.repo.js";
 import { withTransaction } from "../utils/transaction.js";
 
-const isBookingExpired = (booking) => {
+const isBookingExpired = (booking) => { 
   return new Date(booking.expires_at) < new Date();
 };
 // booking  markedasexpired and seat at now avialable for everyone
-const bookingMarkAsExpired = async (booking, client) => {
+const bookingMarkAsExpired = async (booking,client) => {
   try {
     const query = `
               UPDATE bookings 
@@ -20,14 +20,16 @@ const bookingMarkAsExpired = async (booking, client) => {
     await client.query(query, [booking.id]);
     await client.query(
       `
-            UPDATE event_seats
-            SET status= 'available'
-            WHERE id=$1 and status='reserved'
-            `,
+      UPDATE event_seats
+      SET seat_status= 'available'
+      WHERE id=$1 and seat_status='reserved'
+      `,
       [booking.event_seat_id],
     );
   } catch (error) {
-    throw new ApiError(406, "booking marked error");
+    console.log({"Error from booking expored" :error});
+    
+    throw new ApiError(406, error);
   }
 };
 
@@ -43,7 +45,7 @@ const updateBookingOnPaymentStatus =async (client,isSuccess,payment,booking) => 
      
   if (isBookingExpired(booking) && booking.status === "pending") {
     if(isSuccess){
-      await bookingMarkAsExpired(client, booking);
+      await bookingMarkAsExpired(booking, client);
       await stripe.refunds.create({
         payment_intent : payment_intent_id
       })
@@ -163,9 +165,11 @@ const fainalizePaymentIntent =async (payment,eventType,userId=null) => {
 const stripe = new Stripe(process.env.STRIPE_KEY);
 
 const createPaymentIntent = async (req, res) => {
-  const { amount, currency } = req.body;
-  const { booking_id } = req.params;
-  const user_id = req.user.id;
+  const { amount, currency,booking_id } = req.body;
+  console.log({booking_id});
+  
+  // const { booking_id } = req.params;
+  const user_id = req?.user?.id || '6b69403d-0d8b-4274-b59b-c279002bc01d'
 
   if (!amount && amount <= 0) {
     throw new ApiError(
@@ -185,12 +189,23 @@ const createPaymentIntent = async (req, res) => {
     throw new ApiError(406, "booking_id user is required");
   }
 
-  withTransaction(async (client) => {
-    const booking = await bookingRepo.getBookingforUpdate(booking_id);
+  const booking =await withTransaction(async (client) => {
+    const booking = await bookingRepo.getBookingforUpdate(client,booking_id);
     if (isBookingExpired(booking)) {
-      await bookingMarkAsExpired(booking, client);
+       console.log("time expireddddd");
+const expiresAt = new Date(booking.expires_at); // UTC
+const now = new Date();
+
+
+console.log("Booking expired?", now > expiresAt);
+console.log("Current time:", now.toISOString());
+console.log("Expiry time :", expiresAt.toISOString());
+       
+       await bookingMarkAsExpired(booking, client);
       throw new ApiError(406, "Booking has been expired");
+      
     }
+
 
     if (booking.seat_status == "booked") {
       throw new ApiError(406, "Seat has been sold");
@@ -198,6 +213,7 @@ const createPaymentIntent = async (req, res) => {
     if (booking.seat_status !== "reserved") {
       throw new ApiError(406, "Seat is not available for payment");
     }
+    return booking
   });
   const payment = await stripe.paymentIntents.create({
     amount: amount,
@@ -222,8 +238,7 @@ const createPaymentIntent = async (req, res) => {
         payment.amount,
         payment.currency,
         "pending",
-        "stripe",
-        client,
+        "stripe"
       );
 
       if (!payInDB) {
@@ -341,17 +356,20 @@ const cancel_paymentIntent  =  await stripe.paymentIntents.cancel(payment_intent
 
 };
 
-
+// 
   const webhookHandler = async (req,res) => {
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    const userId = req.user.id
+    const userId ='6b69403d-0d8b-4274-b59b-c279002bc01d' 
       let event;
     if (endpointSecret) {
       // Get the signature sent by Stripe
-      const signature = request.headers['stripe-signature'];
-      try {
+        const signature = req.headers["stripe-signature"];
+        try {
+           const payload = Buffer.isBuffer(req.body)
+      ? req.body
+      : Buffer.from(typeof req.body === "string" ? req.body : JSON.stringify(req.body));
         event = stripe.webhooks.constructEvent(
-          request.body,
+          payload,
           signature,
           endpointSecret
         );
@@ -379,7 +397,9 @@ const cancel_paymentIntent  =  await stripe.paymentIntents.cancel(payment_intent
     }
 
     // Return a response to acknowledge receipt of the event
-    response.json({received: true});
+      console.log("Webhook call");
+      
+      return {received: true};
   }
   }
 

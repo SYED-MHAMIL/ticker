@@ -11,9 +11,13 @@ const reserved_seat_booking = async (event_seat_id,
      FOR UPDATE
      `
      const es = await client.query(event_seat_query,[event_seat_id])
-     if(es?.rows[0].seat_status === "reserved"){
-         throw new ApiError(406,"this seat has been reverved by someone")
-     }
+    if (!es.rows.length) {
+  throw new ApiError(404, "Seat not found");
+   }
+
+    if (es.rows[0].seat_status === "reserved") {
+      throw new ApiError(406, "Seat already reserved");
+    }
      
   //  for reserved the seat
       const  es_query = `
@@ -51,7 +55,7 @@ const get_booked_seat =  async (booking_id) => {
   }
 }
 
-const getBookingforUpdate=  async (booking_id) => {
+const getBookingforUpdate=  async (client,booking_id) => {
   try {
     // for booking  
     // event_seat_id UUID NOT NULL,
@@ -78,13 +82,13 @@ const getBookingforUpdate=  async (booking_id) => {
            JOIN event_seats es
               ON b.event_seat_id = es.id
            WHERE b.id=$1
-           FOR UPDATE OF bookings, event_seats                             
+           FOR UPDATE OF b,es                             
          `
 // for update means you looked this row in transaction
 
 
     const params = [booking_id]
-    const {rows} = await db.query(query,params)
+    const {rows} = await client.query(query,params)
    return rows[0] 
 
   } catch (error) {

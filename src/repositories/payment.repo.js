@@ -1,7 +1,8 @@
+import { db } from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 
 
-const  setup_payment= async (payment_intent_id,booking_id,amount,currency,payment_status,privider,client) => {
+const  setup_payment= async (payment_intent_id,booking_id,amount,currency,payment_status,privider) => {
 
   try {
 //   booking_id UUID NOT NULL,
@@ -13,8 +14,8 @@ const  setup_payment= async (payment_intent_id,booking_id,amount,currency,paymen
     const query = `INSERT into payments (payment_intent_id,booking_id,amount,currency,payment_status,privider) VALUES ($1,$2,$3,$4,$5,$6)
     RETURNING *
     `;
-    const params = [payment_intent_id,booking_id,amount,currency,payment_status];
-    const {rows} = await client.query(query, params);
+    const params = [payment_intent_id,booking_id,amount,'USD',payment_status,privider];
+    const {rows} = await db.query(query, params);
     
    return rows[0]
 
