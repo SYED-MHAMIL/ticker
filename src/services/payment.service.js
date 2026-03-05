@@ -38,7 +38,7 @@ const bookingMarkAsExpired = async (booking,client) => {
 
 // if payment succes,faieled, canceled by user
 
-const updateBookingOnPaymentStatus =async (client,isSuccess,payment,booking) => {
+const updateBookingOnPaymentStatus =async ({ client, isSuccess, payment, booking }) => {
     const booking_id=  booking.id;
     const event_seat_id=  booking.event_seat_id;
     const  payment_intent_id =  payment.id
@@ -52,7 +52,7 @@ const updateBookingOnPaymentStatus =async (client,isSuccess,payment,booking) => 
 
       const payment_query = `
           UPDATE payments
-          SET status='refunded'
+          SET payment_status='refunded'
           WHERE payment_intent_id=$1
           `
    
@@ -61,7 +61,7 @@ const updateBookingOnPaymentStatus =async (client,isSuccess,payment,booking) => 
        return;
     }
 
-     await bookingMarkAsExpired(client, booking)
+     await bookingMarkAsExpired(booking, client)
      return;
   }
 
@@ -87,7 +87,7 @@ const updateBookingOnPaymentStatus =async (client,isSuccess,payment,booking) => 
 
     const payment_query = `
     UPDATE payments
-    SET status='success' AND created_at = NOW()
+    SET payment_status='success', created_at = NOW()
     WHERE payment_intent_id=$1
     `
     await client.query(payment_query,[payment_intent_id])
@@ -113,7 +113,7 @@ const updateBookingOnPaymentStatus =async (client,isSuccess,payment,booking) => 
    `
     const payment_query = `
       UPDATE payments
-      SET status='failed'
+      SET payment_status='failed'
       WHERE payment_intent_id=$1
    `
    
@@ -134,7 +134,7 @@ const updateBookingOnPaymentStatus =async (client,isSuccess,payment,booking) => 
 
 
 const fainalizePaymentIntent =async (payment,eventType,userId=null) => {
-  const bookingId = paymentIntent?.metadata?.booking_id;
+  const bookingId = payment?.metadata?.booking_id;
   if (!bookingId) {
     return { ignored: true, reason: "payment_intent_without_booking_metadata" };
   }
@@ -165,12 +165,11 @@ const fainalizePaymentIntent =async (payment,eventType,userId=null) => {
 const stripe = new Stripe(process.env.STRIPE_KEY);
 
 const createPaymentIntent = async (req, res) => {
-  const { amount, currency,booking_id } = req.body;
+  const { amount, currency} = req.body;
   console.log({booking_id});
   
-  // const { booking_id } = req.params;
-  const user_id = req?.user?.id || '6b69403d-0d8b-4274-b59b-c279002bc01d'
-
+  const { booking_id } = req.params;
+  const user_id = req?.user?.id
   if (!amount && amount <= 0) {
     throw new ApiError(
       406,
@@ -192,15 +191,6 @@ const createPaymentIntent = async (req, res) => {
   const booking =await withTransaction(async (client) => {
     const booking = await bookingRepo.getBookingforUpdate(client,booking_id);
     if (isBookingExpired(booking)) {
-       console.log("time expireddddd");
-const expiresAt = new Date(booking.expires_at); // UTC
-const now = new Date();
-
-
-console.log("Booking expired?", now > expiresAt);
-console.log("Current time:", now.toISOString());
-console.log("Expiry time :", expiresAt.toISOString());
-       
        await bookingMarkAsExpired(booking, client);
       throw new ApiError(406, "Booking has been expired");
       
@@ -359,23 +349,26 @@ const cancel_paymentIntent  =  await stripe.paymentIntents.cancel(payment_intent
 // 
   const webhookHandler = async (req,res) => {
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    const userId ='6b69403d-0d8b-4274-b59b-c279002bc01d' 
+    const userId =req.user.id
       let event;
     if (endpointSecret) {
       // Get the signature sent by Stripe
-        const signature = req.headers["stripe-signature"];
-        try {
-           const payload = Buffer.isBuffer(req.body)
-      ? req.body
-      : Buffer.from(typeof req.body === "string" ? req.body : JSON.stringify(req.body));
+      const signature = req.headers["stripe-signature"];
+      if (!signature) {
+        throw new ApiError(400, "Missing stripe-signature header");
+      }
+      try {
+        if (!Buffer.isBuffer(req.body)) {
+          throw new ApiError(400, "Invalid webhook payload format. Expected raw request body.");
+        }
         event = stripe.webhooks.constructEvent(
-          payload,
+          req.body,
           signature,
           endpointSecret
         );
 
       } catch (err) {
-        throw new ApiError(404,err.message)
+        throw new ApiError(400,err.message)
       }
 
     // Handle the event
@@ -384,12 +377,14 @@ const cancel_paymentIntent  =  await stripe.paymentIntents.cancel(payment_intent
         const paymentIntent = event.data.object;
         // Then define and call a method to handle the successful payment intent.
         console.log("payment successfull",paymentIntent)
-        fainalizePaymentIntent(payment,event.type,userId);
+        await fainalizePaymentIntent(paymentIntent,event.type,userId);
         break;
       case 'payment_intent.payment_failed':
         const payment= event.data.object;
         // Then define and call a method to handle the successful attachment of a PaymentMethod.
-        fainalizePaymentIntent(payment,event.type,userId);
+        console.log("payment failed",payment)
+
+        await fainalizePaymentIntent(payment,event.type,userId);
         break;
       // ... handle other event types
       default:

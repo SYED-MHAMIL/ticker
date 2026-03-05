@@ -9,6 +9,7 @@ const app = express();
 app.use(
   cors("*"),
 );
+app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 app.use(express.urlencoded({extended:true}))
 app.use(express.json())
 app.use(cookieParser())

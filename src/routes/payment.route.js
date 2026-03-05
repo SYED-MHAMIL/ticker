@@ -1,7 +1,7 @@
 ﻿import { Router } from "express";
 import paymentController from "../controllers/payment.controller.js";
 import { verifyUser } from "../middlewares/auth.middleware.js";
-
+import express from "express";
 const paymentRouter = Router();
 
 paymentRouter.post("/intent/:booking_id",(req,res,next)=> next(), paymentController.createPaymentIntent);
