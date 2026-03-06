@@ -20,10 +20,9 @@ cron.schedule('* * * * *',async () => {
 
 
 app.use(
-  cors({
-    origin: "localhost:3000",
-  }),
+  cors("*"),
 );
+app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 app.use(express.urlencoded({extended:true}))
 app.use(express.json())
 app.use(cookieParser())

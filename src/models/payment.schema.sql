@@ -1,12 +1,12 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TYPE  payment_status AS ENUM (
-    'success', 'failed', 'refunded'
+CREATE TYPE  payment_status_enum AS ENUM (
+    'pending','success', 'failed', 'refunded'
 );
 
 
 CREATE TYPE  currency_type AS ENUM (
-    '$','INR','PKR'
+    'USD','INR','PKR'
 );
 
 CREATE TYPE  provider_status AS ENUM (
@@ -16,11 +16,12 @@ CREATE TYPE  provider_status AS ENUM (
 
 CREATE TABLE IF NOT EXISTS payments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  payment_intent_id  VARCHAR(50) NOT NULL UNIQUE,
   booking_id UUID NOT NULL,
   amount  INTEGER  NOT NULL,
-  currency currency_type DEFAULT '$',  
-  payment_status bookings_status DEFAULT 'pending',
-  privider provider_status  DEFAULT 'stripe' ,
+  currency currency_type DEFAULT 'USD',  
+  payment_status payment_status_enum DEFAULT 'pending',
+  privider provider_status  DEFAULT 'stripe',
   created_at  TIMESTAMP DEFAULT NOW(),
    
 
