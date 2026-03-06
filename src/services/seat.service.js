@@ -1,15 +1,17 @@
-import { db } from "../db/index.js";
+import { db} from "../db/index.js";
 import seatRepo from "../repositories/seat.repo.js";
 import seat_jobRepo from "../repositories/seat_job.repo.js";
 import { ApiError } from "../utils/ApiError.js";
 
-const genetation_seats = async (client) => {
-  
-  const jobs = await seat_jobRepo.fetchNextPending(client);
+const genetation_seats= async (jobs) => {
+  const client =await db.connect()
+  // const jobs = await seat_jobRepo.fetchNextPending(client);
   if (!jobs) {
     return jobs;
   }
 
+  console.log({"genetation_seats":jobs});
+  
   try {
     let values = [];
     let params = [];
@@ -44,36 +46,36 @@ const genetation_seats = async (client) => {
       params = [];
     }
   } catch (error) {
-    throw new ApiError(406, "Generation seats Error", error);
+    throw new ApiError(406,error);
   }
   return jobs;
 };
 
-async function workerExecute() {
-    while (true) {
-    const client =await db.connect()  
-    await client.query('BEGIN')
-  const job = await genetation_seats(client);
-      try {
-    if (!job) {
-      await new Promise((res) => setTimeout(res, 500));
-      continue
-      ;
-    }
-    await seat_jobRepo.markCompleted(job.id,client);
-    await client.query('COMMIT')
-  } catch (error) {
-    await  client.query('ROLLBACK')
-    if (job?.id) {
-      await seat_jobRepo.markFailed(job.id);
-    }
-  }
-  finally {
-      client.release();
-    }
-}
-}
+// async function workerExecute() {
+//     while (true) {
+//     const client =await db.connect()  
+//     await client.query('BEGIN')
+//   const job = await genetation_seats(client);
+//       try {
+//     if (!job) {
+//       await new Promise((res) => setTimeout(res, 500));
+//       continue
+//       ;
+//     }
+//     await seat_jobRepo.markCompleted(job.id,client);
+//     await client.query('COMMIT')
+//   } catch (error) {
+//     await  client.query('ROLLBACK')
+//     if (job?.id) {
+//       await seat_jobRepo.markFailed(job.id);
+//     }
+//   }
+//   finally {
+//       client.release();
+//     }
+// }
+// }
 
-await workerExecute()
+// await workerExecute()
 
 export default { genetation_seats };

@@ -1,6 +1,6 @@
 import { db } from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
-
+    
 const insert_batches = async (values,params,client)=> {    
     console.log({values,params});
     
