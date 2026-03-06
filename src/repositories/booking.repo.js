@@ -1,6 +1,8 @@
+
 ﻿import { db } from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { withTransaction } from "../utils/transaction.js";
+
 
 const reserved_seat_booking = async (event_seat_id,
     user_id) => {
@@ -97,4 +99,6 @@ const getBookingforUpdate=  async (client,booking_id) => {
 }
 
 
-export default {reserved_seat_booking,get_booked_seat,getBookingforUpdate}
+
+export default {reserved_seat_booking,get_booked_seat,getBookingforUpdate}}
+

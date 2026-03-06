@@ -1,5 +1,5 @@
 import bookingRepo from "../repositories/booking.repo.js";
-
+import {ApiError} from "../utils/ApiError.js"
 
 const reserved_seat_booking=async (req,res) => {
     const {id} =req.user;
