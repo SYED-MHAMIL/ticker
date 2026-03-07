@@ -6,7 +6,6 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon ./index.js",
-    "worker": "node ./src/services/seat_job.service.js",
     "consumer" : "node ./src/services/consumer.service.js"
     
   },

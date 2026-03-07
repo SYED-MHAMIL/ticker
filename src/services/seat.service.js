@@ -51,31 +51,5 @@ const genetation_seats= async (jobs) => {
   return jobs;
 };
 
-// async function workerExecute() {
-//     while (true) {
-//     const client =await db.connect()  
-//     await client.query('BEGIN')
-//   const job = await genetation_seats(client);
-//       try {
-//     if (!job) {
-//       await new Promise((res) => setTimeout(res, 500));
-//       continue
-//       ;
-//     }
-//     await seat_jobRepo.markCompleted(job.id,client);
-//     await client.query('COMMIT')
-//   } catch (error) {
-//     await  client.query('ROLLBACK')
-//     if (job?.id) {
-//       await seat_jobRepo.markFailed(job.id);
-//     }
-//   }
-//   finally {
-//       client.release();
-//     }
-// }
-// }
-
-// await workerExecute()
 
 export default { genetation_seats };

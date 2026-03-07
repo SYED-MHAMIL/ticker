@@ -2,7 +2,8 @@ import { ApiError } from "../utils/ApiError.js";
 import seatService from "./seat.service.js";
 import amqp from "amqplib"
 async function startWorker() {
-    
+     console.log("Starting....");
+     
       const connection = await amqp.connect('amqp://user:password@localhost:5673');
       const channel =await connection.createChannel();
       const queue = "seat_generation";
