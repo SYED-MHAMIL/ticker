@@ -1,9 +1,7 @@
-import { db } from "../db/index.js";
 import seatRepo from "../repositories/seat.repo.js";
 import seat_jobRepo from "../repositories/seat_job.repo.js";
 import { ApiError } from "../utils/ApiError.js";
-import amqp from "amqplib";
-
+import { sendJob } from "../producers/seatjob.producer.js";
 const seat_generation_jobs = async (req,res) => {
 
       const {groups} = req.body ;
@@ -32,22 +30,3 @@ const seat_generation_jobs = async (req,res) => {
 }
 
 export default {seat_generation_jobs}
-
-
-async function sendJob(jobData) {
-  const connection = await amqp.connect('amqp://user:password@localhost:5673');
-  const channel =await connection.createChannel();
-  const queue = "seat_generation";
-  await channel.assertQueue(queue,{durable :true})
-  channel.sendToQueue(
-   queue,
-   Buffer.from(JSON.stringify(jobData)),
-   {persistent:true}
-  )
-   
-  setTimeout(function() {
-    connection.close();
-    process.exit(0)
-  }, 500);
-
-}
