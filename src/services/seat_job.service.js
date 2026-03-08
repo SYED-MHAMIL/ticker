@@ -1,8 +1,7 @@
-import { db } from "../db/index.js";
 import seatRepo from "../repositories/seat.repo.js";
 import seat_jobRepo from "../repositories/seat_job.repo.js";
 import { ApiError } from "../utils/ApiError.js";
-
+import { sendJob } from "../producers/seatjob.producer.js";
 const seat_generation_jobs = async (req,res) => {
 
       const {groups} = req.body ;
@@ -25,6 +24,7 @@ const seat_generation_jobs = async (req,res) => {
         total_seats,
         jsongroups
      )
+     sendJob({venue_id:venueId,groups})
      return data
 
 }

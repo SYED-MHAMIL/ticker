@@ -14,10 +14,9 @@ cron.schedule('* * * * *',async () => {
      console.log("hello mohamil");
      
     } catch (error) {
-     throw new ApiError(500,"Shedule Error")
+     throw new ApiError(500,error)
    }
 })
-
 
 app.use(
   cors("*"),

@@ -1,4 +1,3 @@
-
 ﻿import { db } from "../db/index.js";
 import { ApiError } from "../utils/ApiError.js";
 import { withTransaction } from "../utils/transaction.js";
@@ -98,7 +97,15 @@ const getBookingforUpdate=  async (client,booking_id) => {
   }
 }
 
+const update_booking_status = async () => {
+    const query = `
+       UPDATE bookings
+       SET status = 'expired'
+       WHERE status = 'pending' AND expires_at < NOW()
+       `
+    const {rows} = await db.query(query)
+    return rows[0]
+}
 
 
-export default {reserved_seat_booking,get_booked_seat,getBookingforUpdate}}
-
+export default {reserved_seat_booking,get_booked_seat,getBookingforUpdate,update_booking_status}
