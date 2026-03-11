@@ -27,6 +27,17 @@ app.use(express.json())
 app.use(cookieParser())
 app.use("/api/uploads", express.static("uploads"))
 app.use("/api",router)
+app.get("/",(req,res)=>{
+    res.send({
+      "message" : "hello its come from docker "
+    })
+})
+app.get("/health",(req,res)=>{
+    res.send({
+      "message" : "your health is moving on"
+    })
+})
+
 
 
 const errorHandler =(err,req,res,next )=>{

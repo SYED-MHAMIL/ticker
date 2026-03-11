@@ -8,12 +8,7 @@ async function sendJob(jobData) {
    Buffer.from(JSON.stringify(jobData)),
    {persistent:true}
   )
-   
-  setTimeout(async function() {
-    await connect.close()
-    process.exit(0)
-  }, 500);
-
+    
 }
 
-export {sendJob}
+export {sendJob}  
