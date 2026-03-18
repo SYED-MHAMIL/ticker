@@ -21,6 +21,7 @@ cron.schedule('* * * * *',async () => {
 app.use(
   cors("*"),
 );
+app.set("trust proxy", 1);
 app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 app.use(express.urlencoded({extended:true}))
 app.use(express.json())

@@ -17,3 +17,13 @@ ConnectDB().then(
         })
     }
 ).catch(err =>  console.log("POSGRESQL db connection failed !!! ", err))
+
+
+
+
+
+//   coneect your data with ssl
+// // ssl: {
+//   rejectUnauthorized: false // Required for RDS unless you provide the AWS CA cert
+// }
+// ```
