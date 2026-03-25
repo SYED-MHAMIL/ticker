@@ -22,7 +22,6 @@ const  verifyUser = async (req,res,next) => {
     if (!user) {
         throw new ApiError(406, "Unauthorized user")
      }
-     
      req.user = user 
      
      next()
