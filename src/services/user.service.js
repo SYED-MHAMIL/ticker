@@ -5,8 +5,17 @@ import { ApiError } from "../utils/ApiError.js";
 import  jwt from "jsonwebtoken"
 
 const registerUser =async (req,res) => {
-    let {fullname,email,password,username} =req.body;
-    
+    let {fullname,email,password,username,role} =req.body;
+    if (!role) {
+
+    throw new ApiError(400, "All fields are required");
+  }
+    const role_id = await userRepo.CheckRoleinDB(role)
+  
+    if (!role_id) {
+      throw new ApiError(400, "All fields are required");
+    }
+     
     const isAllMissing = [username, email, fullname, password].some(
     (field) => !field || field.trim() === ""
   );
@@ -45,7 +54,7 @@ const registerUser =async (req,res) => {
     throw new ApiError(500, "Avatar upload failed");
   }
 
-    const user = await userRepo.registerUser({fullname,email,password,username,avatar:uploadedAvatar.url,cover_image :uploadedCoverImage.url})
+    const user = await userRepo.registerUser({fullname,email,password,username,avatar:uploadedAvatar.url,cover_image :uploadedCoverImage.url,role_id})
       if (!user) {
     throw new ApiError(400, "User is not saved in DB");
   }

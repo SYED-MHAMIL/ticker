@@ -24,14 +24,14 @@ async function runMigration() {
     // RBAC autorization
     // *******************************************
     
-    async function setSystemRoles() {
-           const roles=   ['admin','orginzer','user','venue_owner']
-           const values= Array.from({length:roles.length},(_,i)=> `($${i+1})`)
-           const query = `
-            INSERT  into roles (name)
-            VALUES  ${values.join(',')}`
-           await db.query(query,roles)
-    }
+        async function setSystemRoles() {
+            const roles=   ['admin','orginzer','user','venue_owner']
+            const values= Array.from({length:roles.length},(_,i)=> `($${i+1})`)
+            const query = `
+                INSERT  into roles (name)
+                VALUES  ${values.join(',')}`
+            await db.query(query,roles)
+        }
     
 
     async function setSystemPermission() {
@@ -105,6 +105,8 @@ async function runMigration() {
 
     // connect roles to required permissions
     await connectRolesToPermission() 
+
+
 
 
 }
