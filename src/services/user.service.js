@@ -10,10 +10,10 @@ const registerUser =async (req,res) => {
 
     throw new ApiError(400, "All fields are required");
   }
-    const role_id = await userRepo.CheckRoleinDB(role)
-  
-    if (!role_id) {
-      throw new ApiError(400, "All fields are required");
+    role = await userRepo.CheckRoleinDB(role)
+    const role_id = role.id ; 
+    if (!role_id) { 
+      throw new ApiError(400, "role_id are required");
     }
      
     const isAllMissing = [username, email, fullname, password].some(
@@ -54,7 +54,7 @@ const registerUser =async (req,res) => {
     throw new ApiError(500, "Avatar upload failed");
   }
 
-    const user = await userRepo.registerUser({fullname,email,password,username,avatar:uploadedAvatar.url,cover_image :uploadedCoverImage.url,role_id})
+  const user = await userRepo.registerUser({fullname,email,password,username,avatar:uploadedAvatar.url,cover_image :uploadedCoverImage.url,role_id})
       if (!user) {
     throw new ApiError(400, "User is not saved in DB");
   }
@@ -62,12 +62,36 @@ const registerUser =async (req,res) => {
   return user;
 }
 
-const generateAccessAndRefreshToken =  async (id) => {
-     const access_token = jwt.sign({id},process.env.ACCESS_TOKEN_KEY,{expiresIn:process.env.ACCESS_TOKEN_EXPIRY})
-     const refresh_token = jwt.sign({id},process.env.REFRESH_TOKEN_KEY,{expiresIn:process.env.REFRESH_TOKEN_EXPIRY})
+const assignRoleToUser = async (user_id,role_id) => {
+   if ([user_id,role_id].some(c=> !c || c.trim()  ==  "")) {
+          throw new ApiError(203,'user_id and role_id are required')
+   }
+           
+ const user =await userRepo.assignRole(user_id,role_id)
+   if (!user) {
+          throw new ApiError(203,'user have not been gotten role')
+   }
+} 
+
+const generateAccessAndRefreshToken =  async (user) => {
+     const access_token = jwt.sign(user,process.env.ACCESS_TOKEN_KEY,{expiresIn:process.env.ACCESS_TOKEN_EXPIRY})
+     const refresh_token = jwt.sign(user,process.env.REFRESH_TOKEN_KEY,{expiresIn:process.env.REFRESH_TOKEN_EXPIRY})
      return {access_token,refresh_token}
 
     }
+
+const getPermission = async (role_id) => {
+      if (!role_id) {
+         throw new ApiError(406,' role id is  not defined')
+      }
+      try {
+        const  p = await userRepo.getPermission(role_id)  
+        return p
+      } catch (error) {
+        throw new ApiError(406,'Getting permission error')
+      } 
+}
+
 
 const loginUser =async (req,res) => {
     let {email,password,username} =req?.body;
@@ -87,14 +111,15 @@ const loginUser =async (req,res) => {
     
     const isPasswordCorrect =await userRepo.isPasswordCorrect(user?.password,password)
     console.log({"hasHpassword" : user?.id , "password": password ,"cocrect passow":isPasswordCorrect
-
     });
     
     if (!isPasswordCorrect) {
           throw new ApiError(400, "wronge password !");
     }
 
-    const  {access_token,refresh_token} = await generateAccessAndRefreshToken(user?.id)
+    const role_permissions =   await getPermission(user?.role_id)
+    
+    const  {access_token,refresh_token} = await generateAccessAndRefreshToken({user_id : user?.id, role_permissions : role_permissions})
     const userdata=  await userRepo.loginUser(user?.id,refresh_token)
     console.log({"USER DATA " : userdata ,access_token,refresh_token});
     
@@ -119,5 +144,4 @@ const logOut = async (req,res) => {
 }  
 
 
-
-export default {registerUser,loginUser,logOut}
+export default {registerUser,loginUser,logOut,assignRoleToUser,getPermission}

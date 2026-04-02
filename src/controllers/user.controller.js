@@ -6,8 +6,9 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 const registerUser= AsyncHandler(async (req,res)=>{     
      
      const  user  =await userService.registerUser(req,res)
+     await userService.assignRoleToUser(user.id,user.role_id)
       return  res.status(200).send(
-        new ApiResponse(200,user,"User register successfullya")
+        new ApiResponse(200,user,"User register successfully")
      )
    
 })

@@ -1,4 +1,4 @@
-CREATE EXTENSION "uuid-ossp"
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE role_permissions (
   role_id UUID REFERENCES roles(id) ON DELETE CASCADE,
