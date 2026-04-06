@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
   password TEXT NOT NULL,
   fullname VARCHAR(100),
   avatar TEXT,
+  cover_image TEXT,
   refresh_token TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()

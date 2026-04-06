@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 
 async function runMigration() {
 
-    const files = ['user.schema.sql','venue.schema.sql','seat.schema.sql','event.schema.sql','seat_generation_jobs.schema.sql','event_seat.schema.sql','booking.schema.sql','payment.schema.sql'];
+    const files = ['user.schema.sql','venue.schema.sql','seat.schema.sql','event.schema.sql','seat_generation_jobs.schema.sql','event_seat.schema.sql','booking.schema.sql','payment.schema.sql','RBAC/role.schema.sql','RBAC/permission.schema.sql','RBAC/role-permission.schema.sql','RBAC/user_roles.schema.sql' ];
     console.log(" run moiggggg" , files);
     
     for (const file of files) {

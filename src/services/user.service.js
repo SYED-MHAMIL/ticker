@@ -7,8 +7,7 @@ import  jwt from "jsonwebtoken"
 const registerUser =async (req,res) => {
     let {fullname,email,password,username,role} =req.body;
     if (!role) {
-
-    throw new ApiError(400, "All fields are required");
+    throw new ApiError(400, " fields are required");
   }
     role = await userRepo.CheckRoleinDB(role)
     const role_id = role.id ; 
