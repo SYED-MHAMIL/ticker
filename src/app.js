@@ -32,6 +32,9 @@ app.get("/",(req,res)=>{
       "message" : "hello its come from docker "
     })
 })
+
+
+//   forf aws
 app.get("/health",(req,res)=>{
     res.send({
       "message" : "your health is moving on"

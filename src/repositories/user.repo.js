@@ -1,13 +1,14 @@
-import { db } from "../db/index.js";
+import { db, query } from "../db/index.js";
 import bcrypt from "bcrypt"
+import { ApiError } from "../utils/ApiError.js";
 const registerUser = async (body) => {
      try {
          const {rows}  =await  db.query(
-           `INSERT INTO users (fullname,email,password,username,avatar,cover_image) 
-           VALUES ($1,$2,$3,$4,$5,$6)
+           `INSERT INTO users (fullname,email,password,username,avatar,cover_image,role_id) 
+           VALUES ($1,$2,$3,$4,$5,$6,$7)
            RETURNING fullname,username,email,avatar,cover_image
            `,
-            [body.fullname,body.email,body.password,body.username,body.avatar,body.cover_image]
+            [body.fullname,body.email,body.password,body.username,body.avatar,body.cover_image,body.role_id]
          )
          
          return rows[0]
@@ -15,6 +16,44 @@ const registerUser = async (body) => {
         throw new ApiError(406,error?.message)
      }
 }
+
+
+
+const CheckRoleinDB = async (role) => {
+     try {
+         const {rows}  = await  db.query(
+           `SELECT * FROM roles
+            WHERE name = $1
+           `
+         ,[role])
+         
+         return rows[0]
+     } catch (error) {
+        throw new ApiError(406,error?.message)
+     }
+}
+
+const getPermission = async (role_id) => {
+  // get role permission list
+   try {
+   const query = `
+     SELECT r.name, ARRAY_AGG(p.name) AS permissions
+     FROM role_permissions rp
+     JOIN roles r ON r.id = rp.role_id
+     JOIN permissions p ON p.id = rp.permission_id
+     WHERE r.id = $1
+     GROUP BY r.name
+    `
+     const { rows } = await db.query(query, [role_id])
+     return rows[0] || { name: null, permissions: [] }
+   
+   } catch (error) {
+       throw new ApiError(406, 'get user permission access failed')
+   }
+
+  }
+
+
 const findUserbyEmailandID= async (email,username) => {
           const {rows} = await db.query(
                     `SELECT * FROM users WHERE email=$1 OR username=$2
@@ -73,7 +112,14 @@ const logOut = async (id) => {
   return rows[0]
 }
 
+const  assignRole  =async (user_id,role_id) => {
+     const query  = `INSERT into user_roles(user_id,role_id)
+                     VALUES ($1,$2)   
+                    `
+      const {rows} =  await db.query(query,[user_id,role_id])  
+      return  rows[0]
+}
 
 
 
-export default {registerUser,findUserbyEmailandID,loginUser,isPasswordCorrect,logOut,findUserbyID}
+export default {registerUser,findUserbyEmailandID,loginUser,isPasswordCorrect,logOut,findUserbyID,CheckRoleinDB,assignRole,getPermission}
