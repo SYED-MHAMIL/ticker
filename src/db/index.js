@@ -2,25 +2,23 @@ import "dotenv/config";
 import pg from "pg"
 import { DB_NAME, HOST_NAME, USER } from "../constant.js";
 
-const {Pool} = pg
+const {Pool} = pg;
 const credentials = {
   user: USER,
   host: HOST_NAME,
   database: DB_NAME,
   password: process.env?.PASSWORD,
   port: process.env?.DB_PORT, // Default PostgreSQL port
-};   
+};
 
-console.log("passsweord"   ,credentials);
-
-const db = new Pool(credentials)
-const query  =  async (text,params) => {
-    try {
-        return  await db.query(text,params)
-    } catch (error) {
-        //  thorw eroro
-    }
-}
+const db = new Pool(credentials);
+const query = async (text, params) => {
+  try {
+    return await db.query(text, params);
+  } catch (error) {
+    throw error;
+  }
+};
 const ConnectDB = async () => {
      try {
         const res  = await db.query('SELECT NOW()')
