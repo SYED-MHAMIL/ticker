@@ -1,4 +1,15 @@
 services:
+  redis:
+    image : redis:8.6.2-alpine
+    container_name: redis
+    ports:
+       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin
@@ -22,6 +33,8 @@ services:
       postgres:
         condition: service_healthy
       rabbitMQ:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   postgres:

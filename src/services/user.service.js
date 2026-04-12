@@ -7,12 +7,15 @@ import  jwt from "jsonwebtoken"
 const registerUser =async (req,res) => {
     let {fullname,email,password,username,role} =req.body;
     if (!role) {
-    throw new ApiError(400, " fields are required");
+    throw new ApiError(400, "role are required");
   }
-    role = await userRepo.CheckRoleinDB(role)
-    const role_id = role.id ; 
-    if (!role_id) { 
+    let user_role = await userRepo.CheckRoleinDB(role)
+    const role_id = user_role?.id ;
+    console.log({'service' : {role_id,user_role}});
+
+  if (!role_id) { 
       throw new ApiError(400, "role_id are required");
+  
     }
      
     const isAllMissing = [username, email, fullname, password].some(
@@ -118,7 +121,7 @@ const loginUser =async (req,res) => {
 
     const role_permissions =   await getPermission(user?.role_id)
     
-    const  {access_token,refresh_token} = await generateAccessAndRefreshToken({user_id : user?.id, role_permissions : role_permissions})
+    const  {access_token,refresh_token} = await generateAccessAndRefreshToken({id : user?.id, role_permissions : role_permissions})
     const userdata=  await userRepo.loginUser(user?.id,refresh_token)
     console.log({"USER DATA " : userdata ,access_token,refresh_token});
     

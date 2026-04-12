@@ -6,7 +6,7 @@ const registerUser = async (body) => {
          const {rows}  =await  db.query(
            `INSERT INTO users (fullname,email,password,username,avatar,cover_image,role_id) 
            VALUES ($1,$2,$3,$4,$5,$6,$7)
-           RETURNING fullname,username,email,avatar,cover_image
+           RETURNING id,fullname,username,email,avatar,cover_image,role_id
            `,
             [body.fullname,body.email,body.password,body.username,body.avatar,body.cover_image,body.role_id]
          )
@@ -26,9 +26,11 @@ const CheckRoleinDB = async (role) => {
             WHERE name = $1
            `
          ,[role])
+         console.log("check role in db ", rows);
          
          return rows[0]
      } catch (error) {
+       console.log("CheckRoleinDB error:", error);
         throw new ApiError(406,error?.message)
      }
 }
@@ -114,7 +116,8 @@ const logOut = async (id) => {
 
 const  assignRole  =async (user_id,role_id) => {
      const query  = `INSERT into user_roles(user_id,role_id)
-                     VALUES ($1,$2)   
+                     VALUES ($1,$2) 
+                     RETURNING *  
                     `
       const {rows} =  await db.query(query,[user_id,role_id])  
       return  rows[0]

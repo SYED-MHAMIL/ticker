@@ -1,116 +1,87 @@
-import dotenv from "dotenv"
-dotenv.config()
+import dotenv from "dotenv";
+dotenv.config();
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from 'url';
-import { db } from '../db/index.js';
+import { fileURLToPath } from "url";
+import { db } from "./index.js";
+import { withTransaction } from "../utils/transaction.js";
 import { ApiError } from "../utils/ApiError.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const migrationsDir = path.join(__dirname,'migrations');
 
-async function runMigration() {
 
-    const files = ['user.schema.sql','venue.schema.sql','seat.schema.sql','event.schema.sql','seat_generation_jobs.schema.sql','event_seat.schema.sql','booking.schema.sql','payment.schema.sql','RBAC/role.schema.sql','RBAC/permission.schema.sql','RBAC/role-permission.schema.sql','RBAC/user_roles.schema.sql' ];
-    console.log(" run moiggggg" , files);
-    
-    for (const file of files) {
-        const sql = fs.readFileSync(
-            path.join(__dirname, '../models', file),
-            'utf8'
-        );
-        console.log(sql);
-        
-        await db.query(sql);
-    }
 
-    // *******************************************
-    // RBAC autorization
-    // *******************************************
-    
-        async function setSystemRoles() {
-            const roles=   ['admin','organizer','user','venue_owner']
-            const values= Array.from({length:roles.length},(_,i)=> `($${i+1})`)
-            console.log(values);
-            
-            const query = `
-                INSERT  into roles (name)
-                VALUES  ${(values.join(','))}`
-            await db.query(query,roles)
-        }
-    
+// ensure migration table
+// 2. getaplied migration
+// 3. runMigrationFile with actual folder
 
-    async function setSystemPermission() {
-    const permissions = [
-        'create_seat','create_event','create_venue','insert_batches',
-        'count_seats','setup_payment','create_event_seat','update_event_seat_status',
-        'reserved_seat_booking','get_booked_seat','get_booking_for_update','update_booking_status'
-    ];
-    const values = permissions.map((_, i) => `($${i+1})`);
+// 4.   runmigration file :
+//          . get your sqls
+//          .  is check alread applaied if yes skip 
+//          . 
+
+
+async function ensureMigrationTable() {
     const query = `
-        INSERT INTO permissions (name)
-        VALUES ${values.join(',')}
-    `;
-    await db.query(query, permissions);
+    CREATE TABLE IF NOT EXISTS migrations (
+     id SERIAL PRIMARY KEY,
+     name TEXT UNIQUE NOT NULL,
+     run_on TIMESTAMP NOT NULL DEFAULT NOW()
+    )
+    `
+    await db.query(query) 
 }
-    async function connectRolesToPermission() {
-        //   for admin role we will give you all permissions
-            const  query = `
-             INSERT INTO
-             role_permissions (role_id,permission_id)
-             SELECT r.id,p.id FROM roles r, permissions p
-             WHERE r.name = 'admin'
-            `
-            await db.query(query)
 
-            // for organizer role we will give create_event,createVenue,create_seat permission 
-            
-            const  query1 = `INSERT INTO
-             role_permissions (role_id,permission_id)
-                SELECT r.id,p.id 
-                FROM roles r
-                JOIN permissions p
-                 ON p.name In ('create_event','create_venue','create_seat')
-                WHERE r.name = 'organizer' 
-                
-            `
-            await db.query(query1)
-             
-            
-            // for venue_owner we will give them them access of some of routes which is neccesssary to 
-           const  query3 = `INSERT INTO
-             role_permissions (role_id,permission_id)
-                SELECT r.id,p.id 
-                FROM roles r
-                JOIN permissions p
-                 ON p.name In ('create_event','create_venue','create_seat','delete_event','delete_venue','update_event')
-                WHERE r.name = 'venue_owner' 
-                
-            `
-            await db.query(query3)
-            
-            // for user role we will give you reserved_seat_booking,get_booked_seat,get_booking_for_update,update_booking_status permissions
-            const query2 =`
-            INSERT INTO role_permissions (role_id,permission_id)
-            SELECT r.id,p.id 
-            FROM roles r
-            JOIN permissions p
-            ON p.name IN ('reserved_seat_booking','get_booked_seat','get_booking_for_update','update_booking_status')
-            WHERE r.name = 'user'
-            `     
-             await db.query(query2)
+
+// helper for get applaied migration to avoid run again and again and also to run in order of migration file
+async function getApplaiedmigrations() {
+    const query = `
+        SELECT name from migrations ORDER BY id
+    `
+    const { rows } = await db.query(query);
+    return rows.map(row => row.name);
+}
+
+
+// helper for run migration file to insert in migration table and also run the sql file and also to run in order of migration file , and also to run in transaction to avoid any error in migration file and also to rollback if any error in migration file
+async function runMigrationFile(filename) {
+    const insertSql = `INSERT INTO migrations (name) VALUES ($1)`;
+    const migrationFilePath = path.join(migrationsDir, filename);
+    const sqlContent = fs.readFileSync(migrationFilePath, 'utf8');
+
+    await withTransaction(async (client) => {
+        await client.query(insertSql, [filename]);
+        await client.query(sqlContent);
+    });
+}
+
+const runMigrations = async () => {
+    try {
+        await ensureMigrationTable()
+        const applaiedMigrations = new Set(await getApplaiedmigrations())
+         const files =  fs.readdirSync(migrationsDir).filter(file=> file.endsWith(".sql")).sort();
+
+         for(let file of files){
+            if(applaiedMigrations.has(file)){
+                console.log(`Migration file ${file} is already applied, skipping...`);
+               continue;
+            }
+            console.log(`Running migration file ${file}...`);
+            await runMigrationFile(file)
+         }
+
+
+    } catch (error) {
+        throw new ApiError(500, "Error in running migrations", error)      
     }
-
-    //  set role && permission from  system or admin
-    await setSystemRoles()
-    await  setSystemPermission()
-
-    // connect roles to required permissions
-    await connectRolesToPermission() 
-
-
 }
 
-runMigration().catch((err) => {
-    console.log(err);
-    throw new ApiError(400, err);
-});
+runMigrations().then(()=>{
+    console.log("Migrations run successfully");
+    process.exit(0)
+}   ).catch(err=>{
+    console.log("Error in running migrations", err);
+    process.exit(1)
+})
